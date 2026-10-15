@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Villa Delvis - vista a fili</title>
+<style>
+:root{--g:#39ff14;--g2:#7dff63;--gd:#1fa80a;--txt:#b7ffa8;--glass:#050c05b8}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#000;color:var(--txt);font:13px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;user-select:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;opacity:0;transition:opacity .8s}
+canvas.ok{opacity:1}canvas:active{cursor:grabbing}
+.box{position:fixed;background:var(--glass);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid #39ff1428;border-radius:12px;padding:5px;box-shadow:0 0 0 1px #00000080,0 6px 22px #0009}
+button{background:#0000;color:var(--txt);border:1px solid #0000;border-radius:8px;font:inherit;cursor:pointer;padding:6px 11px;white-space:nowrap;transition:background .15s,color .15s,border-color .15s,box-shadow .15s}
+button:hover{border-color:#39ff1466;color:var(--g)}
+button.on{background:#39ff1426;color:var(--g);border-color:#39ff1488;box-shadow:inset 0 0 12px #39ff1422,0 0 10px #39ff1422}
+#top{left:10px;top:10px;right:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;border:none;background:none;padding:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:none}
+#top>div{pointer-events:auto;display:flex;flex-wrap:wrap;gap:2px;background:var(--glass);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid #39ff1428;border-radius:12px;padding:4px;box-shadow:0 6px 22px #0009}
+#title{position:fixed;left:50%;top:12px;transform:translateX(-50%);font-size:11px;letter-spacing:.32em;color:#39ff14aa;text-transform:uppercase;pointer-events:none;text-shadow:0 0 12px #39ff1466}
+#pad{left:10px;bottom:10px;display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(3,42px);gap:3px}
+#pad button{font-size:16px;padding:0;border-color:#39ff1422}
+#pad .c{font-size:15px;border-radius:50%}
+#zoom{right:10px;bottom:10px;display:flex;flex-direction:column;gap:3px}
+#zoom button{width:42px;height:42px;font-size:20px;padding:0;border-color:#39ff1422}
+#views{right:10px;top:60px;display:flex;flex-direction:column;gap:1px}
+#views button{padding:5px 10px;font-size:12px;text-align:left}
+#info{user-select:text;-webkit-user-select:text;left:50%;transform:translateX(-50%);bottom:10px;text-align:center;font-size:12px;max-width:calc(100vw - 240px);min-width:200px;color:#b7ffa8cc}
+#info b{color:var(--g)}
+#info input{user-select:text;-webkit-user-select:text;background:#000;color:var(--g);border:1px solid #39ff1466;border-radius:6px;width:56px;padding:2px 4px}
+#info button{padding:2px 9px;border-color:#39ff1433}
+#alert{z-index:7;top:62px;left:50%;transform:translateX(-50%);background:#3a0606e8;border-color:#ff3030;color:#ffb0b0;cursor:pointer;padding:7px 14px;font-weight:600;animation:pul 1s infinite;text-align:center;max-width:92vw;touch-action:pan-y;transition:transform .2s,opacity .2s}
+@keyframes pul{50%{box-shadow:0 0 18px #ff3030aa}}
+#panel{left:10px;top:62px;z-index:6;width:min(370px,calc(100vw - 20px));max-height:calc(100vh - 74px);overflow:auto;padding:10px;user-select:text;-webkit-user-select:text}
+#panel h3{margin:0 0 6px;font-size:14px;color:var(--g);display:flex;justify-content:space-between;align-items:center}
+#panel img{width:100%;border-radius:8px;border:1px solid #39ff1433;background:#000;min-height:120px;display:block}
+#panel .row{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:7px}
+#panel button{border-color:#39ff1433;padding:5px 10px}
+#panel select{background:#000;color:var(--g);border:1px solid #39ff1466;border-radius:8px;padding:5px;max-width:170px}
+#panel .adv{padding:8px 4px;border-top:1px solid #39ff1422;cursor:pointer;display:flex;gap:7px;touch-action:pan-y;transition:transform .2s,opacity .2s;position:relative}
+#panel .hint{font-size:11px;opacity:.6;margin-top:6px}
+#panel .lnk{color:var(--g);cursor:pointer;text-decoration:underline}
+#panel .adv:hover{background:#39ff1410}
+#panel .dot{flex:none;width:9px;height:9px;border-radius:50%;margin-top:4px}
+#panel small{opacity:.75}
+#legend{left:10px;bottom:158px;padding:6px 10px 5px;font-size:11px}
+#legend .lrow{display:flex;gap:6px;align-items:center}
+#ltxt{font-weight:600;color:var(--g);margin-bottom:2px;white-space:nowrap}
+#lbar{position:relative;width:130px;height:26px}
+#lbar i{position:absolute;left:0;right:0;top:9px;height:8px;border-radius:4px;background:linear-gradient(90deg,rgb(60,120,255),rgb(40,200,200),rgb(80,230,100),rgb(240,220,60),rgb(255,150,40),rgb(255,60,50))}
+#lm{position:absolute;top:0;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid #fff;filter:drop-shadow(0 0 4px #fff);transform:translateX(-6px);transition:left .6s}
+#ldots span{position:absolute;top:19px;width:7px;height:7px;border-radius:50%;border:1px solid #000;transform:translateX(-3.5px);transition:left .6s}
+@media (max-width:640px){#panel{top:112px;max-height:calc(100vh - 124px)}#alert{top:112px;z-index:7}}
+@media (max-width:640px){#info:not(.has){display:none}#info.has{left:10px;right:10px;transform:none;bottom:160px;max-width:none}#title{font-size:9px;letter-spacing:.14em;top:auto;bottom:3px;left:50%;opacity:.7}#views{top:auto;bottom:10px;right:62px;flex-direction:row;flex-wrap:wrap;max-width:calc(100vw - 230px);justify-content:flex-end}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="title">Villa Delvis</div>
+<div id="top" class="box"><div id="floors"></div><div id="chips"></div></div>
+<div id="views" class="box"></div>
+<div id="pad" class="box">
+  <span></span><button data-k="up" title="Inclina verso l'alto">▲</button><span></span>
+  <button data-k="left" title="Ruota a sinistra">◀</button>
+  <button class="c" id="auto" title="Rotazione automatica">⟳</button>
+  <button data-k="right" title="Ruota a destra">▶</button>
+  <span></span><button data-k="down" title="Inclina verso il basso">▼</button><span></span>
+</div>
+<div id="zoom" class="box"><button data-k="zin" title="Avvicina">+</button><button data-k="zout" title="Allontana">−</button></div>
+<div id="info" class="box"></div>
+<div id="alert" class="box" hidden></div>
+<div id="panel" class="box" hidden></div>
+<div id="legend" class="box" hidden><div id="ltxt">Temperatura media —</div><div class="lrow"><span>16°</span><div id="lbar"><b id="lm"></b><i></i><div id="ldots"></div></div><span>28°</span></div></div>
+<script>
+const D={"layers":{"terra":{"ext":[[11,260,12,1913,260,12],[11,0,12,1913,0,12],[11,0,12,11,260,12],[1913,0,12,1913,260,12],[1893,260,-9,1893,260,1046],[1893,0,-9,1893,0,1046],[1893,0,-9,1893,260,-9],[1893,0,1046,1893,260,1046],[1493,260,1025,1913,260,1025],[1493,0,1025,1913,0,1025],[1493,0,1025,1493,260,1025],[1913,0,1025,1913,260,1025],[1122,260,1129,1430,260,1129],[1122,0,1129,1430,0,1129],[1122,0,1129,1122,260,1129],[1430,0,1129,1430,260,1129],[1143,260,1108,1143,260,1733],[1143,0,1108,1143,0,1733],[1143,0,1108,1143,260,1108],[1143,0,1733,1143,260,1733],[144,260,1712,1164,260,1712],[144,0,1712,1164,0,1712],[144,0,1712,144,260,1712],[1164,0,1712,1164,260,1712],[165,260,1108,165,260,1733],[165,0,1108,165,0,1733],[165,0,1108,165,260,1108],[165,0,1733,165,260,1733],[-72,260,999,186,260,1140],[-72,0,999,-27,0,1023],[144,0,1117,186,0,1140],[-72,0,999,-72,260,999],[186,0,1140,186,260,1140],[-51,260,515,-51,260,1031],[-51,0,515,-51,0,1031],[-51,0,515,-51,260,515],[-51,0,1031,-51,260,1031],[-72,260,530,53,260,530],[-72,0,530,53,0,530],[-72,0,530,-72,260,530],[53,0,530,53,260,530],[32,260,-9,32,260,551],[32,0,-9,32,0,551],[32,0,-9,32,260,-9],[32,0,551,32,260,551]],"int":[[147,110,1129,476,110,1129],[639,110,1129,1161,110,1129],[906,110,426,1528,110,426],[1490,110,412,1490,110,595],[1490,110,714,1490,110,1040],[1499,110,506,1908,110,506],[1036,110,536,1413,110,536],[1054,110,518,1054,110,640],[1054,110,758,1054,110,841],[947,110,829,1413,110,829],[965,110,812,965,110,1146],[1395,110,518,1395,110,995],[1395,110,1108,1395,110,1146]],"fin":[[1632,100,1025,1780,100,1025],[1632,200,1025,1780,200,1025],[1632,100,1025,1632,200,1025],[1780,100,1025,1780,200,1025],[1143,100,1292,1143,100,1446],[1143,210,1292,1143,210,1446],[1143,100,1292,1143,210,1292],[1143,100,1446,1143,210,1446],[165,100,1321,165,100,1484],[165,210,1321,165,210,1484],[165,100,1321,165,210,1321],[165,100,1484,165,210,1484],[-27,230,1023,144,230,1117],[-27,0,1023,-27,230,1023],[144,0,1117,144,230,1117]],"face":[[11,0,12,1913,0,12,1913,260,12,11,260,12],[1893,0,-9,1893,0,1046,1893,260,1046,1893,260,-9],[1493,0,1025,1913,0,1025,1913,260,1025,1493,260,1025],[1122,0,1129,1430,0,1129,1430,260,1129,1122,260,1129],[1143,0,1108,1143,0,1733,1143,260,1733,1143,260,1108],[144,0,1712,1164,0,1712,1164,260,1712,144,260,1712],[165,0,1108,165,0,1733,165,260,1733,165,260,1108],[-72,0,999,186,0,1140,186,260,1140,-72,260,999],[-51,0,515,-51,0,1031,-51,260,1031,-51,260,515],[-72,0,530,53,0,530,53,260,530,-72,260,530],[32,0,-9,32,0,551,32,260,551,32,260,-9]],"win":[[1632,100,1025,1780,100,1025,1780,200,1025,1632,200,1025],[1143,100,1292,1143,100,1446,1143,210,1446,1143,210,1292],[165,100,1321,165,100,1484,165,210,1484,165,210,1321]],"door":[[-27,0,1023,144,0,1117,144,230,1117,-27,230,1023]],"iface":[[147,0,1129,476,0,1129,476,110,1129,147,110,1129],[639,0,1129,1161,0,1129,1161,110,1129,639,110,1129],[906,0,426,1528,0,426,1528,110,426,906,110,426],[1490,0,412,1490,0,595,1490,110,595,1490,110,412],[1490,0,714,1490,0,1040,1490,110,1040,1490,110,714],[1499,0,506,1908,0,506,1908,110,506,1499,110,506],[1036,0,536,1413,0,536,1413,110,536,1036,110,536],[1054,0,518,1054,0,640,1054,110,640,1054,110,518],[1054,0,758,1054,0,841,1054,110,841,1054,110,758],[947,0,829,1413,0,829,1413,110,829,947,110,829],[965,0,812,965,0,1146,965,110,1146,965,110,812],[1395,0,518,1395,0,995,1395,110,995,1395,110,518],[1395,0,1108,1395,0,1146,1395,110,1146,1395,110,1108]],"pols":[[[0.32,0.17],[18.93,0.03],[19.05,10.25],[15.13,10.25],[15.13,11.29],[11.43,11.29],[11.43,17.12],[1.65,17.12],[1.65,11.29],[-0.51,10.1],[-0.51,5.36],[0.32,5.21]]]},"primo":{"ext":[[-18,560,501,-18,560,1303],[-18,290,501,-18,290,1303],[-18,290,501,-18,560,501],[-18,290,1303,-18,560,1303],[-58,560,541,1445,560,541],[-58,290,541,1445,290,541],[-58,290,541,-58,560,541],[1445,290,541,1445,560,541],[1399,560,519,1399,560,1228],[1399,290,519,1399,290,1228],[1399,290,519,1399,560,519],[1399,290,1228,1399,560,1228],[1120,560,1196,1441,560,1196],[1120,290,1196,1441,290,1196],[1120,290,1196,1120,560,1196],[1441,290,1196,1441,560,1196],[1134,560,1174,1134,560,1725],[1134,290,1174,1134,290,1725],[1134,290,1174,1134,560,1174],[1134,290,1725,1134,560,1725],[129,560,1682,1184,560,1682],[129,290,1682,1184,290,1682],[129,290,1682,129,560,1682],[1184,290,1682,1184,560,1682],[177,560,1254,177,560,1731],[177,290,1254,177,290,1387],[177,290,1522,177,290,1731],[177,290,1254,177,560,1254],[177,290,1731,177,560,1731],[-60,560,1276,197,560,1276],[-60,290,1276,197,290,1276],[-60,290,1276,-60,560,1276],[197,290,1276,197,560,1276]],"int":[[404,400,1102,1154,400,1102],[312,400,850,312,400,955],[312,400,1085,312,400,1210],[-14,400,864,336,400,864],[402,400,537,402,400,947],[671,400,537,671,400,947],[991,400,537,991,400,947],[382,400,935,523,400,935],[579,400,935,774,400,935],[820,400,935,1049,400,935],[1106,400,935,1409,400,935],[1140,400,921,1140,400,955],[1140,400,1065,1140,400,1214],[0,380,0,1869,380,0],[1729,380,161,1869,380,0],[141,380,161,1729,380,161],[0,380,0,141,380,161],[0,290,0,0,380,0],[1869,290,0,1869,380,0],[1729,290,161,1729,380,161],[141,290,161,141,380,161],[141,380,161,141,380,523],[0,380,523,141,380,523],[0,380,0,0,380,523],[141,290,523,141,380,523],[0,290,523,0,380,523],[1869,380,0,1940,380,1116],[1789,380,1116,1940,380,1116],[1729,380,161,1789,380,1116],[1940,290,1116,1940,380,1116],[1789,290,1116,1789,380,1116],[1789,390,1116,1789,390,1307],[1789,290,1116,1789,390,1116],[1789,290,1211,1789,390,1211],[1789,290,1307,1789,390,1307],[1357,390,1307,1789,390,1307],[1681,290,1307,1681,390,1307],[1573,290,1307,1573,390,1307],[1465,290,1307,1465,390,1307],[1357,290,1307,1357,390,1307],[1357,390,1307,1357,390,1910],[1357,290,1427,1357,390,1427],[1357,290,1548,1357,390,1548],[1357,290,1668,1357,390,1668],[1357,290,1789,1357,390,1789],[1357,290,1910,1357,390,1910],[-30,390,1910,1357,390,1910],[1241,290,1910,1241,390,1910],[1126,290,1910,1126,390,1910],[1010,290,1910,1010,390,1910],[895,290,1910,895,390,1910],[779,290,1910,779,390,1910],[663,290,1910,663,390,1910],[548,290,1910,548,390,1910],[432,290,1910,432,390,1910],[317,290,1910,317,390,1910],[201,290,1910,201,390,1910],[85,290,1910,85,390,1910],[-30,290,1910,-30,390,1910],[-171,390,1258,-171,390,1482],[-171,290,1482,-171,390,1482],[-171,290,1370,-171,390,1370],[-171,290,1258,-171,390,1258],[-171,390,1258,-30,390,1258],[-30,290,1258,-30,390,1258]],"fin":[[-18,380,1005,-18,380,1100],[-18,500,1005,-18,500,1100],[-18,380,1005,-18,500,1005],[-18,380,1100,-18,500,1100],[171,380,541,271,380,541],[171,500,541,271,500,541],[171,380,541,171,500,541],[271,380,541,271,500,541],[503,380,541,573,380,541],[503,500,541,573,500,541],[503,380,541,503,500,541],[573,380,541,573,500,541],[770,380,541,864,380,541],[770,500,541,864,500,541],[770,380,541,770,500,541],[864,380,541,864,500,541],[1126,380,541,1236,380,541],[1126,500,541,1236,500,541],[1126,380,541,1126,500,541],[1236,380,541,1236,500,541],[1399,380,1029,1399,380,1100],[1399,500,1029,1399,500,1100],[1399,380,1029,1399,500,1029],[1399,380,1100,1399,500,1100],[1134,380,1301,1134,380,1437],[1134,500,1301,1134,500,1437],[1134,380,1301,1134,500,1301],[1134,380,1437,1134,500,1437],[513,380,1682,677,380,1682],[513,500,1682,677,500,1682],[513,380,1682,513,500,1682],[677,380,1682,677,500,1682],[177,510,1387,177,510,1522],[177,290,1387,177,510,1387],[177,290,1522,177,510,1522]],"face":[[-18,290,501,-18,290,1303,-18,560,1303,-18,560,501],[-58,290,541,1445,290,541,1445,560,541,-58,560,541],[1399,290,519,1399,290,1228,1399,560,1228,1399,560,519],[1120,290,1196,1441,290,1196,1441,560,1196,1120,560,1196],[1134,290,1174,1134,290,1725,1134,560,1725,1134,560,1174],[129,290,1682,1184,290,1682,1184,560,1682,129,560,1682],[177,290,1254,177,290,1731,177,560,1731,177,560,1254],[-60,290,1276,197,290,1276,197,560,1276,-60,560,1276]],"win":[[-18,380,1005,-18,380,1100,-18,500,1100,-18,500,1005],[171,380,541,271,380,541,271,500,541,171,500,541],[503,380,541,573,380,541,573,500,541,503,500,541],[770,380,541,864,380,541,864,500,541,770,500,541],[1126,380,541,1236,380,541,1236,500,541,1126,500,541],[1399,380,1029,1399,380,1100,1399,500,1100,1399,500,1029],[1134,380,1301,1134,380,1437,1134,500,1437,1134,500,1301],[513,380,1682,677,380,1682,677,500,1682,513,500,1682]],"door":[[177,290,1387,177,290,1522,177,510,1522,177,510,1387]],"iface":[[404,290,1102,1154,290,1102,1154,400,1102,404,400,1102],[312,290,850,312,290,955,312,400,955,312,400,850],[312,290,1085,312,290,1210,312,400,1210,312,400,1085],[-14,290,864,336,290,864,336,400,864,-14,400,864],[402,290,537,402,290,947,402,400,947,402,400,537],[671,290,537,671,290,947,671,400,947,671,400,537],[991,290,537,991,290,947,991,400,947,991,400,537],[382,290,935,523,290,935,523,400,935,382,400,935],[579,290,935,774,290,935,774,400,935,579,400,935],[820,290,935,1049,290,935,1049,400,935,820,400,935],[1106,290,935,1409,290,935,1409,400,935,1106,400,935],[1140,290,921,1140,290,955,1140,400,955,1140,400,921],[1140,290,1065,1140,290,1214,1140,400,1214,1140,400,1065]],"pols":[[[-0.3,0.0],[18.69,0.0],[19.4,11.16],[17.89,11.16],[17.89,13.07],[13.57,13.07],[13.57,19.1],[-0.3,19.1]],[[-1.71,12.58],[-0.3,12.58],[-0.3,14.82],[-1.71,14.82]]]},"tetto":{"ln":[[-81,542,478,1468,542,478],[-81,542,1338,1468,542,1338],[-81,542,478,-81,542,1338],[1468,542,478,1468,542,1338],[-81,716,908,1468,716,908],[106,546,1758,656,716,1758],[656,716,1758,1207,546,1758],[656,716,908,656,716,1758],[106,546,1758,1207,546,1758],[-81,542,478,-81,716,908],[1468,542,478,1468,716,908],[-81,542,1338,-81,716,908],[1468,542,1338,1468,716,908]],"raf":[[-81,578,568,1468,578,568],[-81,615,658,1468,615,658],[-81,651,748,1468,651,748],[-81,687,838,1468,687,838],[-81,707,928,1468,707,928],[-81,671,1018,1468,671,1018],[-81,635,1108,1468,635,1108],[-81,598,1198,1468,598,1198],[-81,562,1288,1468,562,1288]],"face":[[-81,542,478,1468,716,908,1468,542,478],[-81,542,478,-81,716,908,1468,716,908],[-81,542,1338,1468,542,1338,1468,716,908],[-81,542,1338,1468,716,908,-81,716,908],[106,546,1758,656,716,908,106,546,908],[106,546,1758,656,716,1758,656,716,908],[1207,546,1758,1207,546,908,656,716,908],[1207,546,1758,656,716,908,656,716,1758],[-36,560,523,-36,560,1293,-36,716,908],[1423,560,523,1423,716,908,1423,560,1293],[151,560,1713,1162,560,1713,656,716,1713]]},"esterno":{"ln":[[-171,18,1846,-37,18,1846],[-171,18,1872,-37,18,1872],[-171,18,1846,-171,18,1872],[-37,18,1846,-37,18,1872],[-171,36,1820,-37,36,1820],[-171,36,1846,-37,36,1846],[-171,36,1820,-171,36,1846],[-37,36,1820,-37,36,1846],[-171,54,1794,-37,54,1794],[-171,54,1820,-37,54,1820],[-171,54,1794,-171,54,1820],[-37,54,1794,-37,54,1820],[-171,72,1768,-37,72,1768],[-171,72,1794,-37,72,1794],[-171,72,1768,-171,72,1794],[-37,72,1768,-37,72,1794],[-171,91,1742,-37,91,1742],[-171,91,1768,-37,91,1768],[-171,91,1742,-171,91,1768],[-37,91,1742,-37,91,1768],[-171,109,1716,-37,109,1716],[-171,109,1742,-37,109,1742],[-171,109,1716,-171,109,1742],[-37,109,1716,-37,109,1742],[-171,127,1690,-37,127,1690],[-171,127,1716,-37,127,1716],[-171,127,1690,-171,127,1716],[-37,127,1690,-37,127,1716],[-171,145,1664,-37,145,1664],[-171,145,1690,-37,145,1690],[-171,145,1664,-171,145,1690],[-37,145,1664,-37,145,1690],[-171,163,1638,-37,163,1638],[-171,163,1664,-37,163,1664],[-171,163,1638,-171,163,1664],[-37,163,1638,-37,163,1664],[-171,181,1612,-37,181,1612],[-171,181,1638,-37,181,1638],[-171,181,1612,-171,181,1638],[-37,181,1612,-37,181,1638],[-171,199,1586,-37,199,1586],[-171,199,1612,-37,199,1612],[-171,199,1586,-171,199,1612],[-37,199,1586,-37,199,1612],[-171,217,1560,-37,217,1560],[-171,217,1586,-37,217,1586],[-171,217,1560,-171,217,1586],[-37,217,1560,-37,217,1586],[-171,236,1534,-37,236,1534],[-171,236,1560,-37,236,1560],[-171,236,1534,-171,236,1560],[-37,236,1534,-37,236,1560],[-171,254,1508,-37,254,1508],[-171,254,1534,-37,254,1534],[-171,254,1508,-171,254,1534],[-37,254,1508,-37,254,1534],[-171,272,1482,-37,272,1482],[-171,272,1508,-37,272,1508],[-171,272,1482,-171,272,1508],[-37,272,1482,-37,272,1508],[-171,90,1872,-171,380,1482],[-37,90,1872,-37,380,1482],[-268,-2,1787,1757,-2,1787],[1757,-2,1787,1757,-2,2606],[-268,-2,2606,1757,-2,2606],[-268,-2,1787,-268,-2,2606]],"pol":[[-2.68,17.87],[17.57,17.87],[17.57,26.06],[-2.68,26.06]]},"giardino":{"rec":[],"alb":[],"pis":[],"str":[],"pols":{"lotto":[],"strada":[],"acqua":[]}}},"stanze":{"autorimesse":{"area":141.6,"x":7.53,"z":4.88,"y":0,"piano":"terra","poly":[[0.5,0.35],[18.78,0.26],[18.78,4.92],[15.02,4.92],[15.02,4.2],[9.8,4.2],[9.8,11.14],[1.8,11.14],[-0.27,10.01],[-0.27,5.51],[0.5,5.39]]},"cantina":{"area":8.2,"x":12.26,"z":6.81,"y":0,"piano":"terra","poly":[[10.69,5.51],[13.83,5.51],[13.83,8.12],[10.69,8.12]]},"lavanderia":{"area":10.7,"x":11.82,"z":9.8,"y":0,"piano":"terra","poly":[[9.8,8.47],[13.83,8.47],[13.83,11.14],[9.8,11.14]]},"passaggio_coperto":{"area":4.4,"x":14.45,"z":7.79,"y":0,"piano":"terra","poly":[[14.13,4.44],[14.78,4.44],[14.78,11.14],[14.13,11.14]]},"sgombero_est":{"area":17.5,"x":17.03,"z":7.67,"y":0,"piano":"terra","poly":[[15.25,5.21],[18.81,5.21],[18.81,10.13],[15.25,10.13]]},"sgombero":{"area":52.3,"x":6.54,"z":14.19,"y":0,"piano":"terra","poly":[[1.8,11.43],[11.28,11.43],[11.28,16.95],[1.8,16.95]]},"camera_ovest":{"area":11.0,"x":2.01,"z":7.11,"y":2.9,"piano":"primo","poly":[[0.14,5.63],[3.88,5.63],[3.88,8.58],[0.14,8.58]]},"bagno_nord":{"area":8.5,"x":5.38,"z":7.43,"y":2.9,"piano":"primo","poly":[[4.2,5.63],[6.55,5.63],[6.55,9.23],[4.2,9.23]]},"camera_centro":{"area":10.3,"x":8.31,"z":7.43,"y":2.9,"piano":"primo","poly":[[6.87,5.63],[9.75,5.63],[9.75,9.23],[6.87,9.23]]},"camera_est":{"area":13.0,"x":11.9,"z":7.43,"y":2.9,"piano":"primo","poly":[[10.09,5.63],[13.71,5.63],[13.71,9.23],[10.09,9.23]]},"cucina":{"area":10.9,"x":1.58,"z":10.69,"y":2.9,"piano":"primo","poly":[[0.14,8.8],[3.02,8.8],[3.02,12.58],[0.14,12.58]]},"disimpegno":{"area":10.9,"x":7.26,"z":10.19,"y":2.9,"piano":"primo","poly":[[3.26,9.51],[11.26,9.51],[11.26,10.87],[3.26,10.87]]},"bagno_est":{"area":4.8,"x":12.74,"z":10.69,"y":2.9,"piano":"primo","poly":[[11.7,9.55],[13.79,9.55],[13.79,11.84],[11.7,11.84]]},"soggiorno":{"area":49.7,"x":6.67,"z":13.97,"y":2.9,"piano":"primo","poly":[[2.13,11.24],[11.22,11.24],[11.22,16.7],[2.13,16.7]]},"balcone":{"area":31.4,"x":8.11,"z":17.41,"y":2.9,"piano":"primo","poly":[[-0.2,17.27],[11.62,17.27],[11.62,13.17],[13.51,13.17],[13.51,19.0],[-0.2,19.0]]},"terrazza":{"area":84.9,"x":11.55,"z":5.35,"y":2.9,"piano":"primo","poly":[[1.45,1.67],[17.25,1.67],[17.85,11.12],[17.85,13.01],[14.11,13.01],[14.11,5.25],[1.45,5.25]]}},"cfg":{"centro":[8.64,1.4,12.81],"gap":3.2,"y1":2.9,"gronda":5.6,"etichetta":[-4.7648,17.868000000000002],"griglia":[-30,48,-20,50],"fit":0.78,"zone":[]},"nomi":{"autorimesse":"Autorimesse e locali accessori","cantina":"Cantina","lavanderia":"Lavanderia","passaggio_coperto":"Passaggio coperto","sgombero_est":"Sgombero (est)","sgombero":"Sgombero","camera_ovest":"Letto (ovest)","bagno_nord":"Bagno","camera_centro":"Letto (centro)","camera_est":"Letto (est)","cucina":"Cucina","disimpegno":"Disimpegno","bagno_est":"Bagno (est)","soggiorno":"Soggiorno","balcone":"Balcone","terrazza":"Terrazza"},"marks":[]};
+const ST=D.stanze,LY=D.layers,CFG=D.cfg;
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+const C={g:'#39ff14',g2:'#7dff63',gd:'#1fa80a',w:'#b7ffa8'};
+let W=0,H=0,DPR=1;
+const T=CFG.centro.slice(),T_CASA=CFG.centro.slice(),T_LOTTO=CFG.centro.slice();
+const GAP=CFG.gap;
+const st={yaw:-0.62,pitch:0.62,dist:46,vy:0,vp:0,auto:false,pick:false,pPiano:'terra',pH:0,sel:null,g:GAP,hover:null};
+const V={piano:'tutto',tetto:true,esploso:true,locali:true,finestre:true,esterno:true,giardino:false,temperature:true};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+// preferenze ricordate (se il browser lo consente)
+try{const p=JSON.parse(localStorage.getItem('villa_delvis')||'{}');for(const k in V)if(k!=='piano'&&k in p)V[k]=p[k]}catch(e){}
+const save=()=>{try{const o=Object.assign({},V);delete o.piano;localStorage.setItem('villa_delvis',JSON.stringify(o))}catch(e){}};
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cx.setTransform(DPR,0,0,DPR,0,0);st.dTo=fitDist()}
+addEventListener('resize',resize);
+
+// ---- piani / vista esplosa
+const exp=()=>V.piano==='tutto'&&V.esploso;
+const offs=k=>!exp()||k==='ext'?0:(k==='terra'?0:k==='primo'?st.g:2*st.g);
+const showT=()=>V.piano!=='primo',showP=()=>V.piano!=='terra',showR=()=>V.tetto&&V.piano!=='terra';
+const floorY=p=>p==='primo'?CFG.y1:0;
+function fitDist(){const por=W<H*0.9,k=CFG.fit;return (exp()?(showR()?46:38):(V.piano==='primo'&&showR()?32:29))*k*(por?1.2:1)}
+
+// ---- interfaccia
+const mk=(p,t,f,title)=>{const b=document.createElement('button');b.textContent=t;if(title)b.title=title;b.onclick=()=>f(b);p.append(b);return b};
+const fl=document.getElementById('floors'),ch=document.getElementById('chips');
+const FB={};[['tutto','Tutta la casa'],['terra','Piano terra'],['primo','Primo piano']].forEach(([k,t])=>FB[k]=mk(fl,t,()=>{V.piano=k;st.sel=null;ui();info()}));
+const CB={};[['tetto','Tetti'],['esploso','Esploso'],['locali','Locali'],['finestre','Finestre'],['esterno','Esterno'],['temperature','Temperature']].forEach(([k,t])=>CB[k]=mk(ch,t,()=>{V[k]=!V[k];ui()}));
+const consBtn=mk(ch,'Consigli',()=>togglePanel('adv'),'Consigli automatici');
+mk(ch,'Modello pieno ›',()=>{location.href='modello_pieno.html'},'Modello 3D con texture');
+function ui(){for(const k in FB)FB[k].classList.toggle('on',V.piano===k);for(const k in CB)CB[k].classList.toggle('on',!!V[k]);CB.esploso.style.display=V.piano==='tutto'?'':'none';document.getElementById('legend').hidden=!V.temperature;if(typeof updLegend==='function')setTimeout(updLegend,50);st.gTo=exp()?GAP:0;st.dTo=fitDist();st.Tto=V.giardino?T_LOTTO:T_CASA;save();if(typeof setTitle==='function')setTitle()}
+const views=document.getElementById('views');
+const PRE={'Isometrica':[-0.62,0.62],'Dall\'alto':[0,1.52],'Fronte':[0,0.14],'Nord':[Math.PI,0.14],'Ovest':[-Math.PI/2,0.14],'Est':[Math.PI/2,0.14]};
+for(const n in PRE)mk(views,n,()=>anim(PRE[n]));
+const bp=mk(views,'Punta',()=>{st.pick=!st.pick;bp.classList.toggle('on',st.pick);info()},'Con Punta basta un clic singolo (altrimenti doppio clic)');
+let tween=null;
+function anim(t){let dy=t[0]-st.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));tween={y0:st.yaw,dy,p0:st.pitch,dp:t[1]-st.pitch,t:0};st.vy=st.vp=0;st.dTo=fitDist()}
+document.getElementById('auto').onclick=e=>{st.auto=!st.auto;e.currentTarget.classList.toggle('on',st.auto)};
+const held=new Set();
+document.querySelectorAll('[data-k]').forEach(b=>{const k=b.dataset.k;const on=e=>{e.preventDefault();held.add(k);tween=null;st.vy=st.vp=0};const off=()=>held.delete(k);
+  b.addEventListener('pointerdown',on);['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,off))});
+const KM={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down','+':'zin','=':'zin','-':'zout'};
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const m=KM[e.key];if(m){held.add(m);tween=null;e.preventDefault()}});
+addEventListener('keyup',e=>{const m=KM[e.key];if(m)held.delete(m)});
+
+// ---- mouse / touch (con inerzia)
+const ptrs=new Map();let moved=0,pinch0=0;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);moved=0;tween=null;st.vy=st.vp=0;if(ptrs.size==2){const a=[...ptrs.values()];pinch0=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1])}});
+cv.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId)){let h=null,bd=14;for(const d of dots){const k=Math.hypot(d.x-e.clientX,d.y-e.clientY);if(k<bd){bd=k;h=d.n}}st.hover=h;cv.style.cursor=h?'pointer':'';return}
+  const p=ptrs.get(e.pointerId);const dx=e.clientX-p[0],dy=e.clientY-p[1];ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+  if(ptrs.size==2){const a=[...ptrs.values()];const d=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);st.dTo=null;if(pinch0)st.dist=clamp(st.dist*pinch0/d,6,140);pinch0=d;return}
+  moved+=Math.abs(dx)+Math.abs(dy);st.yaw-=dx*0.008;st.pitch=clamp(st.pitch+dy*0.006,-0.05,1.55);st.vy=-dx*0.008*60*.6+st.vy*.4;st.vp=dy*0.006*60*.6+st.vp*.4});
+let lastTap={t:0,x:0,y:0};
+cv.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);pinch0=0;if(moved<6){st.vy=st.vp=0;if(ptrs.size==0){
+  const now=performance.now(),dbl=now-lastTap.t<380&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<28;
+  if(dbl){lastTap.t=0;doPick(e.clientX,e.clientY);return}
+  lastTap={t:now,x:e.clientX,y:e.clientY};
+  if(st.pick){doPick(e.clientX,e.clientY);return}
+  if(hitMark(e.clientX,e.clientY))return;
+  hitDot(e.clientX,e.clientY)}}});
+cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId)});
+cv.addEventListener('pointerleave',()=>{st.hover=null});
+cv.addEventListener('wheel',e=>{e.preventDefault();st.dTo=null;st.dist=clamp(st.dist*Math.exp(e.deltaY*0.001),6,140)},{passive:false});
+cv.addEventListener('dblclick',e=>e.preventDefault());
+
+// ---- camera
+let cam;
+function setCam(){
+  const cy=Math.cos(st.pitch),sy=Math.sin(st.pitch);
+  const ty=T[1]+(exp()?st.g*0.9:0)+(showR()&&!exp()?0.8:0);
+  const p=[T[0]+st.dist*Math.sin(st.yaw)*cy,ty+st.dist*sy,T[2]+st.dist*Math.cos(st.yaw)*cy];
+  let f=[T[0]-p[0],ty-p[1],T[2]-p[2]];const fl=Math.hypot(...f);f=f.map(v=>v/fl);
+  let r=[-f[2],0,f[0]];const rl=Math.hypot(...r)||1;r=r.map(v=>v/rl);
+  let u=[r[1]*f[2]-r[2]*f[1],r[2]*f[0]-r[0]*f[2],r[0]*f[1]-r[1]*f[0]];if(u[1]<0)u=u.map(v=>-v);
+  cam={p,f,r,u,fc:Math.min(W,H)*1.1+Math.max(0,W-H)*0.3};
+}
+function tr(x,y,z){const v=[x-cam.p[0],y-cam.p[1],z-cam.p[2]];return[v[0]*cam.r[0]+v[1]*cam.r[1]+v[2]*cam.r[2],v[0]*cam.u[0]+v[1]*cam.u[1]+v[2]*cam.u[2],v[0]*cam.f[0]+v[1]*cam.f[1]+v[2]*cam.f[2]]}
+const sc=a=>[W/2+cam.fc*a[0]/a[2],H/2-cam.fc*a[1]/a[2]];
+function proj(x,y,z){const a=tr(x,y,z);return a[2]>0.3?sc(a):null}
+
+// ---- primitive di disegno
+const near=0.3;
+function lines(segs,dy,col,lw,al,glow){
+  if(!segs||!segs.length)return;
+  const bk=[[],[],[]];
+  for(let i=0;i<segs.length;i++){const s=segs[i];
+    let a=tr(s[0]/100,s[1]/100+dy,s[2]/100),b=tr(s[3]/100,s[4]/100+dy,s[5]/100);
+    if(a[2]<near&&b[2]<near)continue;
+    if(a[2]<near){const t=(near-a[2])/(b[2]-a[2]);a=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,near]}
+    else if(b[2]<near){const t=(near-b[2])/(a[2]-b[2]);b=[b[0]+(a[0]-b[0])*t,b[1]+(a[1]-b[1])*t,near]}
+    const k=clamp(Math.floor(((a[2]+b[2])/2-st.dist*0.8)/(st.dist*0.22)),0,2);
+    bk[k].push(sc(a),sc(b))}
+  for(let k=0;k<3;k++){const q=bk[k];if(!q.length)continue;
+    cx.beginPath();for(let i=0;i<q.length;i+=2){cx.moveTo(q[i][0],q[i][1]);cx.lineTo(q[i+1][0],q[i+1][1])}
+    const f=[1,.8,.6][k];
+    if(glow){cx.strokeStyle=col;cx.globalAlpha=al*f*.16;cx.lineWidth=lw*3.6;cx.stroke()}
+    cx.strokeStyle=col;cx.globalAlpha=al*f;cx.lineWidth=lw;cx.stroke()}
+}
+function quads(list,dy,fn){ // list = [[x,y,z]*n in cm]
+  for(const q of list){const P=[];let ok=true;
+    for(let i=0;i<q.length;i+=3){const a=proj(q[i]/100,q[i+1]/100+dy,q[i+2]/100);if(!a){ok=false;break}P.push(a)}
+    if(ok)fn(P,q)}}
+function path(P){cx.beginPath();P.forEach((a,i)=>i?cx.lineTo(a[0],a[1]):cx.moveTo(a[0],a[1]));cx.closePath()}
+function poly(pts,y,fill,stroke,lw){const q=[];for(const p of pts){const a=proj(p[0],y,p[1]);if(!a)return;q.push(a)}path(q);if(fill){cx.fillStyle=fill;cx.fill()}if(stroke){cx.strokeStyle=stroke;cx.lineWidth=lw;cx.stroke()}}
+function wallFill(list,dy,a0,a1){ // sfumatura verticale
+  quads(list,dy,(P)=>{const top=Math.min(P[2][1],P[3][1]),bot=Math.max(P[0][1],P[1][1]);
+    const g=cx.createLinearGradient(0,top,0,bot);g.addColorStop(0,'rgba(57,255,20,'+a0+')');g.addColorStop(1,'rgba(57,255,20,'+a1+')');
+    path(P);cx.fillStyle=g;cx.fill()})}
+function tag(text,x,y,right){cx.font='600 10.5px system-ui,sans-serif';cx.textAlign=right?'right':'left';cx.fillStyle='rgba(57,255,20,.8)';cx.shadowColor=C.g;cx.shadowBlur=8;cx.fillText(text,x,y);cx.shadowBlur=0}
+
+// ---- scena
+let dots=[],mdots=[],tt0=performance.now();
+function ground(){
+  // griglia a terra con dissolvenza
+  const y=-0.31;cx.lineWidth=1;
+  const gx0=CFG.griglia[0],gx1=CFG.griglia[1],gz0=CFG.griglia[2],gz1=CFG.griglia[3],step=2;
+  for(let x=gx0;x<=gx1;x+=step){const a=proj(x,y,gz0),b=proj(x,y,gz1);if(!a||!b)continue;const d=Math.abs(x-T_CASA[0])/((gx1-gx0)/2);cx.globalAlpha=Math.max(0,.17-d*.15)*(x%10===0?1.8:1);cx.strokeStyle=C.g;cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke()}
+  for(let z=gz0;z<=gz1;z+=step){const a=proj(gx0,y,z),b=proj(gx1,y,z);if(!a||!b)continue;const d=Math.abs(z-T_CASA[2])/((gz1-gz0)/2);cx.globalAlpha=Math.max(0,.17-d*.15)*(z%10===0?1.8:1);cx.strokeStyle=C.g;cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke()}
+  cx.globalAlpha=1}
+function draw(){
+  setCam();
+  const bg=cx.createRadialGradient(W/2,H*.55,10,W/2,H*.55,Math.max(W,H)*.75);bg.addColorStop(0,'#0a140a');bg.addColorStop(.55,'#030603');bg.addColorStop(1,'#000');
+  cx.globalCompositeOperation='source-over';cx.globalAlpha=1;cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+  cx.lineCap='round';cx.lineJoin='round';
+  ground();
+  if(V.esterno){poly(LY.esterno.pol,-0.02,'rgba(57,255,20,.04)','#39ff1433',1);lines(LY.esterno.ln,0,C.gd,1.2,.6);
+    }
+  if(V.giardino){const G=LY.giardino;
+    poly(G.pols.lotto,-0.31,'rgba(57,255,20,.035)','#1fa80a55',1);
+    poly(G.pols.strada,-0.29,'rgba(183,255,168,.07)',null);
+    lines(G.str,0,C.gd,1,.55);
+    lines(G.rec,0,C.gd,1.1,.75);
+    lines(G.alb,0,C.gd,.9,.42);
+    poly(G.pols.acqua,-0.25,'rgba(0,255,200,.13)',null);
+    lines(G.pis,0,C.w,1.3,.9,true);
+    }
+  for(const [k,vis] of [['terra',showT()],['primo',showP()]]){if(!vis)continue;
+    const o=offs(k),Dk=LY[k],fy=floorY(k)+o;
+    for(const pp of (Dk.pols||LY.terra.pols)){poly(pp,fy,'rgba(57,255,20,.07)',null);poly(pp,fy,null,'#1fa80acc',1.4)}
+    if(V.temperature){for(const m of marks){if(m.tipo!=='sensore'||!m.locale)continue;const r=ST[m.locale];if(!r)continue;if((r.piano==='terra'?'terra':'primo')!==k)continue;
+      const s=stt(m.entita),tv=s?parseFloat(s.state):NaN;if(isNaN(tv))continue;const c=tcolor(tv);
+      poly(r.poly,fy+.03,'rgba('+c+',.26)','rgba('+c+',.95)',1.6);const p=proj(r.x,fy+.15,r.z);
+      if(p){cx.font='700 15px system-ui,sans-serif';cx.textAlign='center';cx.fillStyle='rgb('+c+')';cx.shadowColor='rgb('+c+')';cx.shadowBlur=8;cx.fillText(tv.toFixed(1).replace('.',',')+'°',p[0],p[1]-18);cx.shadowBlur=0}}}
+    // stanza evidenziata
+    for(const n of sel){const r=ST[n];if(!r||(r.piano==='terra')!==(k==='terra'))continue;
+      const pu=.5+.5*Math.sin((performance.now()-tt0)/320);poly(r.poly,fy+.02,'rgba(57,255,20,'+(.12+.1*pu)+')','rgba(57,255,20,.9)',1.6)}
+    cx.globalCompositeOperation='lighter';
+    wallFill(Dk.iface,o,.16,.05);wallFill(Dk.face,o,.12,.025);
+    if(V.finestre){quads(Dk.win,o,(P)=>{path(P);cx.fillStyle='rgba(183,255,168,.22)';cx.fill()});quads(Dk.door,o,(P)=>{path(P);cx.fillStyle='rgba(57,255,20,.06)';cx.fill()})}
+    cx.globalCompositeOperation='source-over';
+    lines(Dk.int,o,C.g2,1.7,.95,true);
+    lines(Dk.ext,o,C.g,2.1,1,true);
+    if(V.finestre)lines(Dk.fin,o,C.w,1.2,.95);
+    if(exp()){const a=proj(CFG.etichetta[0],fy+.1,CFG.etichetta[1]);if(a){const nm=k==='terra'?'PIANO TERRA':'PRIMO PIANO';cx.strokeStyle='rgba(57,255,20,.35)';cx.lineWidth=1;cx.beginPath();cx.moveTo(a[0]-34,a[1]);cx.lineTo(a[0]+6,a[1]);cx.stroke();tag(nm,a[0]-38,a[1]+4,true)}}
+  }
+  if(showR()){const o=offs('tetto');
+    cx.globalCompositeOperation='lighter';
+    for(const t of LY.tetto.face){const P=[];let ok=true;for(let i=0;i<9;i+=3){const a=proj(t[i]/100,t[i+1]/100+o,t[i+2]/100);if(!a){ok=false;break}P.push(a)}if(ok){path(P);cx.fillStyle='rgba(31,168,10,.11)';cx.fill()}}
+    cx.globalCompositeOperation='source-over';
+    lines(LY.tetto.raf,o,C.gd,.9,.5);lines(LY.tetto.ln,o,C.g,2,1,true);
+    if(exp()){const a=proj(CFG.etichetta[0],CFG.gronda+o,CFG.etichetta[1]);if(a){cx.strokeStyle='rgba(57,255,20,.35)';cx.lineWidth=1;cx.beginPath();cx.moveTo(a[0]-34,a[1]);cx.lineTo(a[0]+6,a[1]);cx.stroke();tag('TETTI',a[0]-38,a[1]+4,true)}}}
+  cx.globalAlpha=1;
+  // puntini + callout
+  dots=[];
+  if(V.locali){const tt=(performance.now()-tt0)/1000;
+    for(const n in ST){const r=ST[n];const k=r.piano==='terra'?'terra':r.piano==='esterno'?'ext':'primo';if(!(k==='terra'?showT():k==='ext'?(V.giardino||V.esterno):showP()))continue;
+      const p=proj(r.x,r.y+0.35+offs(k),r.z);if(!p)continue;dots.push({n,x:p[0],y:p[1]});
+      const open=sel.has(n),hov=st.hover===n,ph=(tt*.7+(r.x*.13+r.z*.07))%1;
+      // onda
+      cx.strokeStyle=C.g;cx.lineWidth=1.2;cx.globalAlpha=(1-ph)*.55;cx.beginPath();cx.arc(p[0],p[1],4+ph*13,0,7);cx.stroke();
+      const bl=.55+.45*Math.sin(tt*3.2+r.x);
+      cx.globalAlpha=open||hov?1:bl;cx.fillStyle=C.g;cx.shadowColor=C.g;cx.shadowBlur=open||hov?16:10;cx.beginPath();cx.arc(p[0],p[1],open||hov?5.5:4,0,7);cx.fill();cx.shadowBlur=0;cx.globalAlpha=1}
+    cx.font='600 13px system-ui,sans-serif';cx.textAlign='left';
+    const show=[...sel];if(st.hover&&!sel.has(st.hover))show.push(st.hover);
+    for(const n of show){const d=dots.find(q=>q.n===n);if(!d)continue;const r=ST[n],hv=!sel.has(n);
+      const tx=nome(n),sub=(r.piano==='terra'?'Piano terra':r.piano==='esterno'?'Esterno':'Primo piano')+' · '+r.area.toFixed(1).replace('.',',')+' m²';
+      cx.font='600 13px system-ui,sans-serif';const w1=cx.measureText(tx).width;cx.font='11px system-ui,sans-serif';const w2=cx.measureText(sub).width;const w=Math.max(w1,w2)+18;
+      const ex=d.x+26,ey=d.y-30;
+      cx.globalAlpha=hv?.7:1;
+      cx.strokeStyle=C.g;cx.lineWidth=1.4;cx.shadowColor=C.g;cx.shadowBlur=7;cx.beginPath();cx.moveTo(d.x+3,d.y-3);cx.lineTo(ex,ey);cx.lineTo(ex+w,ey);cx.stroke();cx.shadowBlur=0;
+      cx.fillStyle='rgba(3,8,3,.82)';cx.strokeStyle='rgba(57,255,20,.45)';cx.lineWidth=1;
+      cx.beginPath();cx.roundRect?cx.roundRect(ex,ey-34,w,34,6):cx.rect(ex,ey-34,w,34);cx.fill();cx.stroke();
+      cx.textAlign='left';cx.font='600 13px system-ui,sans-serif';cx.fillStyle=C.g;cx.fillText(tx,ex+9,ey-19);
+      cx.font='11px system-ui,sans-serif';cx.fillStyle='rgba(183,255,168,.8)';cx.fillText(sub,ex+9,ey-6);cx.globalAlpha=1}}
+  // segnaposto telecamere/sensori
+  const nearCnt=[];mdots=[];const fcs=st.focus&&performance.now()<st.focusT?st.focus:null;
+  for(const m of marks){const k=m.livello||(m.y>=CFG.y1?'primo':'terra');if(!(k==='terra'?showT():k==='tetto'?showR():showP()))continue;const yy=m.y+offs(k);const p=proj(m.x,yy,m.z);if(!p)continue;
+    const al=mAlarms(m),alarm=al.length>0;mdots.push({m,x:p[0],y:p[1]});
+    const col=alarm?'#ff2d2d':(m.colore||(m.tipo==='camera'?'#ff6a00':C.g)),rgb=[1,3,5].map(i=>parseInt(col.substr(i,2),16)).join(',');
+    cx.strokeStyle=col;cx.fillStyle=col;cx.lineWidth=1.6;
+    {const ph=((performance.now()-tt0)/(alarm?450:1100))%1;cx.globalAlpha=(1-ph)*(alarm?1:.7);cx.lineWidth=alarm?2.2:1.4;cx.beginPath();cx.arc(p[0],p[1],8+ph*(alarm?28:16),0,7);cx.stroke();cx.globalAlpha=1;cx.lineWidth=1.6}
+    if(fcs===m.nome){cx.save();cx.strokeStyle='#fff';cx.lineWidth=2;cx.beginPath();cx.arc(p[0],p[1],15+3*Math.sin(performance.now()/120),0,7);cx.stroke();cx.restore()}
+    if(m.tipo==='camera'){
+      if(m.dir!=null){const a=m.dir*Math.PI/180,fv=(m.fov||90)*Math.PI/360,Ln=m.raggio||4;
+        const q=[[a-fv,Ln],[a,Ln*1.04],[a+fv,Ln]].map(([t,l])=>proj(m.x+Math.sin(t)*l,yy,m.z+Math.cos(t)*l));
+        if(q.every(Boolean)){const g=cx.createLinearGradient(p[0],p[1],q[1][0],q[1][1]);g.addColorStop(0,'rgba('+rgb+','+(alarm?'.6':'.38')+')');g.addColorStop(1,'rgba('+rgb+',0)');
+          cx.beginPath();cx.moveTo(p[0],p[1]);cx.lineTo(q[0][0],q[0][1]);cx.lineTo(q[1][0],q[1][1]);cx.lineTo(q[2][0],q[2][1]);cx.closePath();cx.fillStyle=g;cx.fill();cx.globalAlpha=.5;cx.stroke();cx.globalAlpha=1}}
+      cx.fillStyle='#000';cx.beginPath();cx.roundRect?cx.roundRect(p[0]-8,p[1]-5.5,16,11,3):cx.rect(p[0]-8,p[1]-5.5,16,11);cx.fill();cx.stroke();
+      cx.fillStyle=col;cx.shadowColor=col;cx.shadowBlur=12;cx.beginPath();cx.arc(p[0],p[1],2.8,0,7);cx.fill();cx.shadowBlur=0}
+    else{cx.fillStyle='#000';cx.beginPath();cx.moveTo(p[0],p[1]-8);cx.lineTo(p[0]+7,p[1]);cx.lineTo(p[0],p[1]+8);cx.lineTo(p[0]-7,p[1]);cx.closePath();cx.fill();cx.stroke();cx.fillStyle=col;cx.shadowColor=col;cx.shadowBlur=10;cx.beginPath();cx.arc(p[0],p[1],2.2,0,7);cx.fill();cx.shadowBlur=0}
+    const idx=nearCnt.filter(q=>Math.hypot(q[0]-p[0],q[1]-p[1])<26).length;nearCnt.push(p);const oy=idx*21;
+    const lv=liveText(m);const lab=m.nome+(lv?'  '+lv:'')+(alarm?'  ⚠ '+al[0].t:'');cx.font='600 11px system-ui,sans-serif';cx.textAlign='left';const lw=cx.measureText(lab).width+12;
+    cx.fillStyle='rgba(3,8,3,.82)';cx.beginPath();cx.roundRect?cx.roundRect(p[0]+11,p[1]-9+oy,lw,18,9):cx.rect(p[0]+11,p[1]-9+oy,lw,18);cx.fill();cx.strokeStyle='rgba('+rgb+',.7)';cx.lineWidth=1;cx.stroke();cx.fillStyle=col;cx.fillText(lab,p[0]+17,p[1]+4+oy)}
+  // punto scelto
+  if(st.sel){const s=st.sel,o=offs(s.lvl),p=proj(s.x,s.y+o,s.z);if(p){const pu=.5+.5*Math.sin((performance.now()-tt0)/260);
+    cx.strokeStyle='#fff';cx.fillStyle='#fff';cx.lineWidth=1.4;cx.shadowColor='#fff';cx.shadowBlur=10;
+    cx.beginPath();cx.arc(p[0],p[1],6+pu*3,0,7);cx.moveTo(p[0]-15,p[1]);cx.lineTo(p[0]-5,p[1]);cx.moveTo(p[0]+5,p[1]);cx.lineTo(p[0]+15,p[1]);cx.moveTo(p[0],p[1]-15);cx.lineTo(p[0],p[1]-5);cx.moveTo(p[0],p[1]+5);cx.lineTo(p[0],p[1]+15);cx.stroke();
+    cx.beginPath();cx.arc(p[0],p[1],1.8,0,7);cx.fill();cx.shadowBlur=0}}
+  // vignettatura
+  const vg=cx.createRadialGradient(W/2,H/2,Math.min(W,H)*.45,W/2,H/2,Math.max(W,H)*.8);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');cx.fillStyle=vg;cx.fillRect(0,0,W,H);
+}
+
+// ---- locali e nomi
+let marks=[];const sel=new Set();let NOMI={},stamp='';
+function setTitle(){const lv=m=>m.livello||(m.y>=CFG.y1?'primo':'terra');const hid=marks.filter(m=>!(lv(m)==='terra'?showT():lv(m)==='tetto'?showR():showP())).length;
+  document.getElementById('title').textContent='Villa Delvis'+(marks.length?' · '+marks.length+' dispositivi'+(hid?' ('+hid+' su altro piano)':''):'')+(stamp?' · dati '+stamp:'')}
+const nome=n=>NOMI[n]||(n.charAt(0).toUpperCase()+n.slice(1)).replace(/_/g,' ');
+// valori dal vivo da Home Assistant (la pagina e' nello stesso dominio di HA)
+function hassS(){try{return parent.document.querySelector('home-assistant').hass.states}catch(e){return null}}
+function fmt(s){if(!s||s.state==='unavailable'||s.state==='unknown')return null;const n=parseFloat(s.state);if(isNaN(n))return s.state;const u=(s.attributes||{}).unit_of_measurement||'';return u==='%'?n.toFixed(0)+'%':n.toFixed(1).replace('.',',')+(u==='°C'?'°':u?' '+u:'')}
+function liveText(m){if(m.tipo==='camera')return m.valore||'';const S=hassS();if(!S)return m.valore||'';const v=[fmt(S[m.entita]),m.entita2?fmt(S[m.entita2]):null].filter(Boolean).join(' · ');return v||m.valore||''}
+const getj=(f,cb)=>fetch(f+'?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(o=>cb(o)).catch(()=>{});
+const loadAux=()=>{if(D.nomi){NOMI=D.nomi;marks=D.marks||[];setTitle();return}getj('nomi_stanze.json',o=>{NOMI=o||{}});getj(location.search.includes('demo')?'posizioni_demo.json':'posizioni.json',a=>{marks=Array.isArray(a)?a:[];const d=new Date();stamp=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');setTitle()})};
+loadAux();setInterval(loadAux,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadAux()});addEventListener('focus',loadAux);
+function hitDot(mx,my){let best=null,bd=20;for(const d of dots){const k=Math.hypot(d.x-mx,d.y-my);if(k<bd){bd=k;best=d}}
+  if(!best)return false;if(sel.has(best.n))sel.delete(best.n);else sel.add(best.n);return true}
+
+// ---- doppio clic: leggi il punto sulla superficie toccata
+function polyHit(poly,x,z){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>z)!=(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])c=!c}return c}
+function rayTri(o,d,a,b,c){const e1=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],e2=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+  const h=[d[1]*e2[2]-d[2]*e2[1],d[2]*e2[0]-d[0]*e2[2],d[0]*e2[1]-d[1]*e2[0]];const det=e1[0]*h[0]+e1[1]*h[1]+e1[2]*h[2];if(Math.abs(det)<1e-9)return null;
+  const f=1/det,s=[o[0]-a[0],o[1]-a[1],o[2]-a[2]],u=f*(s[0]*h[0]+s[1]*h[1]+s[2]*h[2]);if(u<0||u>1)return null;
+  const q=[s[1]*e1[2]-s[2]*e1[1],s[2]*e1[0]-s[0]*e1[2],s[0]*e1[1]-s[1]*e1[0]],v=f*(d[0]*q[0]+d[1]*q[1]+d[2]*q[2]);if(v<0||u+v>1)return null;
+  const tt=f*(e2[0]*q[0]+e2[1]*q[1]+e2[2]*q[2]);return tt>0.05?tt:null}
+function doPick(mx,my){
+  setCam();const dx=(mx-W/2)/cam.fc,dy=-(my-H/2)/cam.fc;
+  const d=[0,1,2].map(i=>cam.f[i]+dx*cam.r[i]+dy*cam.u[i]),o=cam.p;
+  let best=null;const take=(t,lvl,tipo)=>{if(t!=null&&(!best||t<best.t))best={t,lvl,tipo}};
+  const P3=(q,i,dy)=>[q[i]/100,q[i+1]/100+dy,q[i+2]/100];
+  for(const k of ['terra','primo']){if(!(k==='terra'?showT():showP()))continue;const dyk=offs(k);
+    for(const q of LY[k].face){const a=P3(q,0,dyk),b=P3(q,3,dyk),c=P3(q,6,dyk),e=P3(q,9,dyk);const nx=(b[1]-a[1])*(e[2]-a[2])-(b[2]-a[2])*(e[1]-a[1]),nz=(b[0]-a[0])*(e[1]-a[1])-(b[1]-a[1])*(e[0]-a[0]),nl=Math.hypot(nx,nz)||1;
+      const tA=rayTri(o,d,a,b,c),tB=rayTri(o,d,a,c,e);const tt=tA!=null&&(tB==null||tA<tB)?tA:tB;if(tt!=null&&(!best||tt<best.t)){let sx=nx/nl,sz=nz/nl;if(sx*(o[0]-a[0])+sz*(o[2]-a[2])<0){sx=-sx;sz=-sz}best={t:tt,lvl:k,tipo:'Facciata',n:[sx*0.27,sz*0.27]}}}
+    if(Math.abs(d[1])>1e-6){const yf=floorY(k)+dyk,t=(yf-o[1])/d[1];if(t>0.05){const x=o[0]+d[0]*t,z=o[2]+d[2]*t;if((LY[k].pols||LY.terra.pols).some(pp=>polyHit(pp,x,z)))take(t,k,'Pavimento')}}}
+  if(showR()){const dyk=offs('tetto');for(const q of LY.tetto.face)take(rayTri(o,d,P3(q,0,dyk),P3(q,3,dyk),P3(q,6,dyk)),'tetto','Tetto')}
+  if(V.esterno&&Math.abs(d[1])>1e-6){const t=(0-o[1])/d[1];if(t>0.05)take(t,'ext','Terreno')}
+  if(!best){st.sel=null;info();return}
+  let x=o[0]+d[0]*best.t,y=o[1]+d[1]*best.t,z=o[2]+d[2]*best.t;const off=offs(best.lvl);if(best.n){x+=best.n[0];z+=best.n[1]}
+  // locale più vicino (stesso piano)
+  const pian=best.lvl==='terra'?'terra':best.lvl==='ext'?'esterno':'primo';let nm='',bd=1e9;
+  {for(const n in ST){if(ST[n].piano!==pian)continue;const r=ST[n];let dd=Math.hypot(r.x-x,r.z-z);if(polyHit(r.poly,x,z))dd=-1;if(dd<bd){bd=dd;nm=n}}}
+  st.sel={x,y:y-off,z,lvl:best.lvl,tipo:best.tipo,stanza:nm,dist:bd};info()}
+function info(){
+  const el=document.getElementById('info'),s=st.sel;el.classList.toggle('has',!!s);
+  if(!s){el.innerHTML='Trascina per girare · rotella per lo zoom · tocca un puntino per il nome<br><b>Doppio clic</b> su un punto della casa per leggere le coordinate';return}
+  const base=s.lvl==='primo'||s.lvl==='tetto'?CFG.y1:0;
+  const quando=s.stanza?(s.dist<0?'dentro ':'vicino a ')+nome(s.stanza):'';
+  const txt='{"x":'+s.x.toFixed(2)+',"y":'+s.y.toFixed(2)+',"z":'+s.z.toFixed(2)+'}';
+  el.innerHTML='<b>'+s.tipo+(s.lvl==='terra'?' · piano terra':s.lvl==='primo'?' · primo piano':s.lvl==='tetto'?' · falda':'')+'</b>'+(quando?' · '+quando:'')+
+   '<br><b>X '+s.x.toFixed(2)+' · Z '+s.z.toFixed(2)+' · Y '+s.y.toFixed(2)+'</b> m'+(s.lvl==='ext'?'':' <span style="opacity:.7">('+(s.y-base).toFixed(2)+' m sopra il pavimento del piano)</span>')+
+   '<br><button id="cp">Copia</button> <button id="cl">Chiudi</button>';
+  document.getElementById('cp').onclick=ev=>{const b=ev.target;
+    const fall=()=>{b.outerHTML='<input id="cv" readonly value=\''+txt+'\' style="width:210px">';const i=document.getElementById('cv');i.focus();i.select()};
+    let ok=false;try{const ta=document.createElement('textarea');ta.value=txt;ta.style.cssText='position:fixed;left:-999px;top:0;opacity:0';document.body.appendChild(ta);ta.focus();ta.select();ok=document.execCommand('copy');ta.remove()}catch(e){}
+    if(ok){b.textContent='Copiato ✓';return}
+    try{navigator.clipboard.writeText(txt).then(()=>{b.textContent='Copiato ✓'},fall)}catch(e){fall()}};
+  document.getElementById('cl').onclick=()=>{st.sel=null;info()}}
+
+
+// ================= interazione con Home Assistant =================
+const HS=()=>{try{return parent.document.querySelector('home-assistant').hass}catch(e){return null}};
+const stt=id=>{const h=HS();return h&&h.states?h.states[id]||null:null};
+const isOn=id=>{const s=stt(id);return !!s&&s.state==='on'};
+const mAlarmsRaw=m=>{const g={};for(const a of (m.allarmi||[])){const s=stt(a.e);if(!s||s.state!=='on')continue;const ts=new Date(s.last_changed).getTime()||0;
+    if(!g[a.t]||ts>g[a.t].ts)g[a.t]={e:a.e,t:a.t,ts,k:'a:'+m.nome+':'+a.t+':'+ts}}return Object.values(g)};
+const mAlarms=m=>mAlarmsRaw(m).filter(a=>!acked(a.k));
+const moreInfo=id=>{try{parent.document.querySelector('home-assistant').dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:id},bubbles:true,composed:true}))}catch(e){}};
+function tcolor(v){const S=[[16,[60,120,255]],[20,[40,200,200]],[22,[80,230,100]],[24,[240,220,60]],[26,[255,150,40]],[28,[255,60,50]]];
+  if(v<=S[0][0])return S[0][1].join(',');if(v>=S[5][0])return S[5][1].join(',');
+  for(let i=0;i<5;i++){if(v<=S[i+1][0]){const f=(v-S[i][0])/(S[i+1][0]-S[i][0]);return S[i][1].map((c,j)=>Math.round(c+(S[i+1][1][j]-c)*f)).join(',')}}return '80,230,100'}
+const ago=ms=>{const s=Math.max(0,Math.round(ms/1000));if(s<60)return s+' s fa';if(s<3600)return Math.round(s/60)+' min fa';if(s<86400)return Math.round(s/3600)+' h fa';return Math.round(s/86400)+' g fa'};
+const fmtN=(v,d=1)=>v.toFixed(d).replace('.',',');
+
+// pannello (telecamera / sensore / consigli)
+let panelKind=null,panelTimer=null,ptzTimer=null,panelM=null;
+const P=()=>document.getElementById('panel');
+function closePanel(){clearInterval(panelTimer);panelTimer=null;panelKind=null;panelM=null;P().hidden=true;P().innerHTML=''}
+function togglePanel(k){if(panelKind===k){closePanel();return}closePanel();if(k==='adv')openAdv()}
+function hitMark(mx,my){let best=null,bd=18;for(const d of mdots){const k=Math.hypot(d.x-mx,d.y-my);if(k<bd){bd=k;best=d}}
+  if(!best)return false;closePanel();if(best.m.tipo==='camera')openCam(best.m);else openSens(best.m);return true}
+function camImg(m){const s=stt(m.entita),tok=s&&s.attributes&&s.attributes.access_token;return tok?'/api/camera_proxy/'+m.entita+'?token='+tok+'&_='+Date.now():''}
+function lastSeen(m){let best=null;for(const a of (m.allarmi||[])){const s=stt(a.e);if(!s)continue;const ts=new Date(s.last_changed).getTime();if(!best||ts>best.ts)best={ts,t:a.t,on:s.state==='on'}}
+  return best?(best.on?best.t+' in corso':'Ultimo rilevamento: '+best.t+' '+ago(Date.now()-best.ts)):''}
+function openCam(m){panelKind='cam';panelM=m;const p=P();p.hidden=false;const pz=m.ptz,hasS=!!HS();
+  const btn=(c,l,tt)=>'<button data-c="'+c+'" title="'+tt+'" style="width:36px;height:34px;padding:0">'+l+'</button>';
+  p.innerHTML='<h3><span>'+m.nome+'</span><button id="px">✕</button></h3><img id="li" alt="immagine">'+
+   '<div id="ls" style="margin-top:5px;font-size:12px"></div>'+
+   (pz?'<div class="row"><span style="opacity:.7">PTZ</span>'+btn('MOVE_LEFT','◀','Sinistra')+btn('MOVE_UP','▲','Su')+btn('MOVE_DOWN','▼','Giù')+btn('MOVE_RIGHT','▶','Destra')+btn('ZOOM_IN','＋','Zoom +')+btn('ZOOM_OUT','－','Zoom −')+'</div><div class="row"><select id="ps"><option value="">Preset…</option></select></div>':'')+
+   '<div class="row"><button id="mi">Apri in HA (video)</button></div><small>Tieni premuta una freccia per muovere; al rilascio la dome si ferma.</small>';
+  document.getElementById('px').onclick=closePanel;document.getElementById('mi').onclick=()=>moreInfo(m.entita);
+  const im=document.getElementById('li');im.onerror=()=>{document.getElementById('ls').textContent='Immagine non disponibile (apri in HA)'};
+  const upd=()=>{if(panelKind!=='cam')return;const u=camImg(m);if(u)im.src=u;document.getElementById('ls').textContent=lastSeen(m)||''};
+  upd();panelTimer=setInterval(upd,1200);
+  if(pz){p.querySelectorAll('[data-c]').forEach(b=>{const c=b.dataset.c;
+      b.addEventListener('pointerdown',e=>{e.preventDefault();ptz(m,c)});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>ptzStop(m)))});
+    const s=stt(pz.preset),sel=document.getElementById('ps');if(s&&s.attributes&&s.attributes.options){s.attributes.options.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;sel.append(op)});sel.value=s.state}
+    sel.onchange=()=>{if(sel.value){const h=HS();h&&h.callService('select','select_option',{entity_id:pz.preset,option:sel.value})}}}}
+function ptz(m,c){const h=HS();if(!h)return;clearTimeout(ptzTimer);h.callService('mqtt','publish',{topic:'frigate/'+m.ptz.frigate+'/ptz',payload:c});ptzTimer=setTimeout(()=>ptzStop(m),2500)}
+function ptzStop(m){clearTimeout(ptzTimer);const h=HS();if(h&&m&&m.ptz)h.callService('mqtt','publish',{topic:'frigate/'+m.ptz.frigate+'/ptz',payload:'STOP'})}
+function openSens(m){panelKind='sens';panelM=m;const p=P();p.hidden=false;
+  const upd=()=>{if(panelKind!=='sens')return;const tv=stt(m.entita),hv=m.entita2?stt(m.entita2):null,bv=m.batteria?stt(m.batteria):null;
+    p.innerHTML='<h3><span>'+m.nome+'</span><button id="px">✕</button></h3>'+
+     '<div style="font-size:22px;color:var(--g);font-weight:700">'+(tv&&!isNaN(parseFloat(tv.state))?fmtN(parseFloat(tv.state))+'°C':'—')+(hv&&!isNaN(parseFloat(hv.state))?'  <span style="font-size:16px">'+Math.round(parseFloat(hv.state))+'%</span>':'')+'</div>'+
+     '<small>'+(m.locale?nome(m.locale)+' · ':'')+(bv&&!isNaN(parseFloat(bv.state))?'batteria '+Math.round(parseFloat(bv.state))+'% · ':'')+(tv?'aggiornato '+ago(Date.now()-new Date(tv.last_changed).getTime()):'')+'</small>'+
+     '<div class="row"><button id="mi">Storico in HA</button></div>';
+    document.getElementById('px').onclick=closePanel;document.getElementById('mi').onclick=()=>moreInfo(m.entita)};
+  upd();panelTimer=setInterval(upd,5000)}
+
+
+// ---- conferma di lettura: scorri verso sinistra per eliminare
+const ACK_KEY='villa_delvis_ack';
+function ackLoad(){try{const o=JSON.parse(localStorage.getItem(ACK_KEY)||'{}'),n=Date.now();for(const k in o)if(o[k]<n)delete o[k];return o}catch(e){return {}}}
+function ackSet(k,ms){try{const o=ackLoad();o[k]=Date.now()+ms;localStorage.setItem(ACK_KEY,JSON.stringify(o))}catch(e){ACKMEM[k]=Date.now()+ms}}
+const ACKMEM={};
+const acked=k=>{const o=ackLoad();return !!o[k]||(ACKMEM[k]&&ACKMEM[k]>Date.now())};
+function ackReset(prefix){try{const o=ackLoad();for(const k in o)if(k.startsWith(prefix))delete o[k];localStorage.setItem(ACK_KEY,JSON.stringify(o))}catch(e){}for(const k in ACKMEM)if(k.startsWith(prefix))delete ACKMEM[k]}
+function swipeLeft(el,onDismiss){let x0=null,dx=0,moved=false;
+  el.addEventListener('pointerdown',e=>{x0=e.clientX;dx=0;moved=false;el.style.transition='none';try{el.setPointerCapture(e.pointerId)}catch(_){}});
+  el.addEventListener('pointermove',e=>{if(x0===null)return;dx=e.clientX-x0;if(Math.abs(dx)>6)moved=true;const d=Math.min(0,dx);el.style.transform='translateX('+d+'px)';el.style.opacity=String(Math.max(.25,1+d/260))});
+  const end=()=>{if(x0===null)return;const w=el.getBoundingClientRect().width;el.style.transition='transform .2s,opacity .2s';
+    if(dx<-Math.min(90,w*.3)){el.style.transform='translateX(-110%)';el.style.opacity='0';setTimeout(onDismiss,200)}else{el.style.transform='';el.style.opacity=''}
+    x0=null;setTimeout(()=>{moved=false},50)};
+  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+  el.addEventListener('click',e=>{if(moved){e.stopImmediatePropagation();e.preventDefault()}},true)}
+
+// banner allarmi
+let alertKey='',alertAckKey='';
+function updAlert(){const el=document.getElementById('alert');let first=null,mm=null,ak='';
+  for(const m of marks){const a=mAlarms(m);if(a.length){first=a[0];mm=m;ak=a[0].k;break}}
+  const key=first?ak:'';if(key===alertKey)return;alertKey=key;alertAckKey=ak;
+  el.style.transform='';el.style.opacity='';
+  if(!key){el.hidden=true;return}
+  const S=hassStates(),arm=S&&S['sensor.dhi_arc3800h_fw2_868_arm_state'];
+  el.innerHTML='⚠ '+first.t+(first.t==='Veicolo'?' rilevato':' rilevata')+' · '+mm.nome+(arm&&arm.state?' · allarme '+(arm.state==='disarmed'?'disinserito':'inserito'):'')+'<div style="font-size:10px;font-weight:400;opacity:.7">tocca per aprire · scorri a sinistra per eliminare</div>';el.hidden=false;
+  el.onclick=()=>{closePanel();openCam(mm)}}
+(function(){const el=document.getElementById('alert');swipeLeft(el,()=>{ackSet(alertAckKey,24*3600*1000);el.hidden=true;alertKey='__ack__';setTimeout(()=>{alertKey=''},50)})})();
+const hassStates=()=>{const h=HS();return h&&h.states?h.states:null};
+
+// consigli
+const ZONE=CFG.zone||[];
+function coperta(z){return marks.some(m=>m.tipo==='camera'&&m.dir!=null&&(()=>{const dx=z.x-m.x,dz=z.z-m.z,d=Math.hypot(dx,dz);if(d>(m.raggio||6)+1.5)return false;let a=Math.atan2(dx,dz)*180/Math.PI-m.dir;a=((a+540)%360)-180;return Math.abs(a)<=(m.fov||90)/2+8})())}
+function consigliTutti(){const S=hassStates(),out=[];
+  if(!S)return [{liv:'info',t:'I consigli funzionano dentro Home Assistant (servono i valori dei sensori).'}];
+  const num=id=>{const s=S[id];if(!s||s.state==='unavailable'||s.state==='unknown')return null;const n=parseFloat(s.state);return isNaN(n)?null:n};
+  for(const m of marks){
+    if(m.tipo==='sensore'){const tv=num(m.entita),hv=m.entita2?num(m.entita2):null,bv=m.batteria?num(m.batteria):null,L=m.locale?nome(m.locale):m.nome;
+      if(tv===null)out.push({liv:'media',t:m.nome+': il sensore non risponde. Controlla batteria e Wi-Fi (si sveglia solo ogni tanto).',m});
+      if(bv!==null&&bv<10)out.push({liv:'alta',t:m.nome+': batteria al '+Math.round(bv)+'%, sostituiscila subito.',m});else if(bv!==null&&bv<20)out.push({liv:'media',t:m.nome+': batteria al '+Math.round(bv)+'%, tienila d\'occhio.',m});
+      if(hv!==null){if(hv>=70)out.push({liv:'alta',t:L+': umidità '+Math.round(hv)+'%, rischio muffa. Arieggia o usa un deumidificatore.',m});
+        else if(hv>=60)out.push({liv:'info',t:L+': umidità '+Math.round(hv)+'%, un po\' alta. Arieggiare qualche minuto aiuta.',m});
+        else if(hv<30)out.push({liv:'info',t:L+': aria secca ('+Math.round(hv)+'%). Un umidificatore può aiutare.',m})}
+      if(tv!==null){if(tv>=27)out.push({liv:'media',t:L+': '+fmtN(tv)+'°, fa caldo. Schermi le finestre o apri per il ricambio d\'aria.',m});
+        else if(tv<=17)out.push({liv:'media',t:L+': '+fmtN(tv)+'°, fa freddo. Controlla il riscaldamento.',m})}
+      if(tv!==null&&hv!==null&&hv>=60&&tv<=20)out.push({liv:'media',t:L+': aria fredda e umida ('+fmtN(tv)+'°, '+Math.round(hv)+'%): possibile condensa sulle pareti.',m})}
+    else{const s=S[m.entita];if(s&&s.state==='unavailable')out.push({liv:'alta',t:m.nome+': telecamera non raggiungibile.',m})}}
+  const arm=S['sensor.dhi_arc3800h_fw2_868_arm_state'];
+  for(const m of marks){const a=mAlarms(m);if(a.length)out.push({liv:'alta',k:'allarme:'+a[0].k,ak:a[0].k,t:a[0].t+(a[0].t==='Veicolo'?' rilevato':' rilevata')+' da '+m.nome+(arm&&arm.state&&arm.state!=='disarmed'?' con l\'allarme inserito: controlla subito le immagini.':'. L\'allarme è disinserito: verifica che sia una presenza prevista.'),m})}
+  const scop=ZONE.filter(z=>!coperta(z)).map(z=>z.n);
+  if(scop.length)out.push({liv:'info',t:'Nessuna telecamera inquadra '+scop.join(', ')+' (calcolo sul cono delle telecamere, senza contare ostacoli).'});
+  const ord={alta:0,media:1,info:2};out.forEach(c=>{if(!c.k)c.k=c.t});out.sort((a,b)=>ord[a.liv]-ord[b.liv]);return out}
+const consigli=()=>consigliTutti().filter(c=>!acked('c:'+c.k));
+const nascosti=()=>consigliTutti().filter(c=>acked('c:'+c.k)).length;
+const COL={alta:'#ff3030',media:'#ffb020',info:'#39ff14'};
+function openAdv(){panelKind='adv';const p=P();p.hidden=false;
+  const upd=()=>{if(panelKind!=='adv')return;const L=consigli(),nh=nascosti();
+    p.innerHTML='<h3><span>Consigli ('+L.length+')</span><button id="px">✕</button></h3>'+
+    (L.length?L.map((c,i)=>'<div class="adv" data-i="'+i+'"><span class="dot" style="background:'+COL[c.liv]+';box-shadow:0 0 8px '+COL[c.liv]+'"></span><span>'+c.t+'</span></div>').join(''):'<div style="padding:8px">Tutto regolare: nessun consiglio al momento.</div>')+
+    '<div class="hint">'+(L.length?'Scorri a sinistra un consiglio per eliminarlo dopo averlo letto. ':'')+(nh?'<span class="lnk" id="rs">Ripristina '+nh+' eliminat'+(nh>1?'i':'o')+'</span>':'')+'</div>';
+    document.getElementById('px').onclick=closePanel;const rs=document.getElementById('rs');if(rs)rs.onclick=()=>{ackReset('c:');upd();updBadge()};
+    p.querySelectorAll('.adv').forEach(el=>{const c=L[+el.dataset.i];
+      swipeLeft(el,()=>{ackSet('c:'+c.k,12*3600*1000);if(c.ak)ackSet(c.ak,24*3600*1000);upd();updBadge()});
+      el.addEventListener('click',()=>{if(c.m){st.focus=c.m.nome;st.focusT=performance.now()+4000}})})};
+  upd();panelTimer=setInterval(()=>{const act=document.activeElement;upd()},4000)}
+function updBadge(){const L=consigli().filter(c=>c.liv!=='info'||true);const n=L.length,hi=L.some(c=>c.liv==='alta');
+  consBtn.textContent='Consigli'+(n?' ('+n+')':'');consBtn.style.color=hi?'#ff6060':'';consBtn.style.borderColor=hi?'#ff303088':''}
+
+// legenda temperature: media + posizione di ogni sensore sulla barra
+function updLegend(){const L=document.getElementById('legend');if(L.hidden)return;const S=hassStates();
+  const vals=[];for(const m of marks){if(m.tipo!=='sensore'||!m.entita)continue;const s=S&&S[m.entita],v=s?parseFloat(s.state):NaN;if(!isNaN(v))vals.push({m,v})}
+  const lm=document.getElementById('lm'),dots=document.getElementById('ldots'),tx=document.getElementById('ltxt');
+  if(!vals.length){lm.style.display='none';dots.innerHTML='';tx.textContent='Temperatura media — (nessun dato)';return}
+  const avg=vals.reduce((a,x)=>a+x.v,0)/vals.length,pos=v=>Math.max(0,Math.min(100,(v-16)/12*100))+'%';
+  lm.style.display='';lm.style.left=pos(avg);tx.textContent='Temperatura media '+fmtN(avg)+'° ('+vals.length+' locali)';
+  if(dots.children.length!==vals.length){dots.innerHTML='';vals.forEach(()=>dots.append(document.createElement('span')))}
+  vals.forEach((x,i)=>{const d=dots.children[i];d.style.left=pos(x.v);d.style.background='rgb('+tcolor(x.v)+')';d.title=(x.m.locale?nome(x.m.locale):x.m.nome)+' '+fmtN(x.v)+'°'})}
+setInterval(updLegend,2000);setTimeout(updLegend,2500);
+setInterval(updAlert,1000);setInterval(updBadge,5000);setTimeout(()=>{updAlert();updBadge()},2500);
+
+// ---- ciclo
+let last=performance.now(),idle=0;
+function frame(t){
+  requestAnimationFrame(frame);
+  if(document.hidden){last=t;return}
+  const dt=Math.min(.05,(t-last)/1000);last=t;
+  if(tween){tween.t=Math.min(1,tween.t+dt/0.8);const e=1-Math.pow(1-tween.t,3);st.yaw=tween.y0+tween.dy*e;st.pitch=tween.p0+tween.dp*e;if(tween.t>=1)tween=null}
+  if(!ptrs.size&&(st.vy||st.vp)){st.yaw+=st.vy*dt;st.pitch=clamp(st.pitch+st.vp*dt,-0.05,1.55);const f=Math.pow(.02,dt);st.vy*=f;st.vp*=f;if(Math.abs(st.vy)<.01)st.vy=0;if(Math.abs(st.vp)<.01)st.vp=0}
+  if(st.Tto){let mv=false;for(let i=0;i<3;i++){const d=st.Tto[i]-T[i];if(Math.abs(d)>.01){T[i]+=d*Math.min(1,dt*4);mv=true}else T[i]=st.Tto[i]}if(!mv)st.Tto=null}
+  if(st.dTo!=null){const d=st.dTo-st.dist;if(Math.abs(d)<.05){st.dist=st.dTo;st.dTo=null}else st.dist+=d*Math.min(1,dt*5)}
+  if(st.gTo!=null){const d=st.gTo-st.g;if(Math.abs(d)<.01){st.g=st.gTo;st.gTo=null}else st.g+=d*Math.min(1,dt*6)}
+  if(held.has('left'))st.yaw+=1.3*dt;if(held.has('right'))st.yaw-=1.3*dt;
+  if(held.has('up'))st.pitch=clamp(st.pitch-0.9*dt,-0.05,1.55);if(held.has('down'))st.pitch=clamp(st.pitch+0.9*dt,-0.05,1.55);
+  if(held.has('zin')||held.has('zout')){st.dTo=null;st.dist=clamp(st.dist*(held.has('zin')?1-0.9*dt:1+0.9*dt),6,140)}
+  if(st.auto&&!ptrs.size)st.yaw-=0.25*dt;
+  draw();cv.classList.add('ok')}
+if(!HS()){consBtn.style.display='none';CB.temperature.style.display='none';V.temperature=false}
+resize();ui();st.dist=st.dTo;st.dTo=null;if(st.Tto){for(let i=0;i<3;i++)T[i]=st.Tto[i];st.Tto=null}info();requestAnimationFrame(frame);
+</script>
+</body>
+</html>

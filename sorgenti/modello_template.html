@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Villa Delvis - modello 3D</title>
+<style>
+:root{--ink:#1d2a22;--acc:#1f7a4d;--acc2:#2fa86a;--glass:#ffffffd9;--line:#1f7a4d33}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;font:13px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);user-select:none;
+  background:linear-gradient(#bcd6ee,#e9f1f7 55%,#dfe6d2)}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+canvas:active{cursor:grabbing}
+.box{position:fixed;background:var(--glass);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;padding:4px;box-shadow:0 6px 22px #0000002a}
+button{background:#0000;color:var(--ink);border:1px solid #0000;border-radius:8px;font:inherit;cursor:pointer;padding:6px 11px;white-space:nowrap;transition:background .15s,color .15s,border-color .15s}
+button:hover{border-color:var(--acc2);color:var(--acc)}
+button.on{background:#1f7a4d1f;color:var(--acc);border-color:var(--acc2)}
+#top{left:10px;top:10px;right:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;border:none;background:none;padding:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:none}
+#top>div{pointer-events:auto;display:flex;flex-wrap:wrap;gap:2px;background:var(--glass);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;padding:4px;box-shadow:0 6px 22px #0000002a}
+#views{right:10px;top:60px;display:flex;flex-direction:column;gap:1px}
+#views button{padding:5px 10px;font-size:12px;text-align:left}
+#zoom{right:10px;bottom:10px;display:flex;flex-direction:column;gap:3px}
+#zoom button{width:42px;height:42px;font-size:20px;padding:0}
+#title{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#1d2a22aa;pointer-events:none;text-align:center}
+#info{left:10px;bottom:10px;font-size:12px;max-width:min(420px,calc(100vw - 80px));user-select:text;-webkit-user-select:text;padding:8px 10px}
+#info b{color:var(--acc)}
+#info input{width:230px;font:inherit;border:1px solid var(--line);border-radius:6px;padding:2px 4px}
+.lbl{position:fixed;left:0;top:0;pointer-events:none;transform:translate(-50%,-50%);background:#ffffffe0;border:1px solid var(--line);border-radius:9px;padding:2px 7px;font-size:11px;font-weight:600;white-space:nowrap;color:var(--ink);box-shadow:0 2px 8px #0002;will-change:left,top}
+.lbl small{font-weight:400;opacity:.65;margin-left:4px}
+#err{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#fff;color:#a00;font-size:15px;padding:30px;text-align:center}
+@media (max-width:640px){#title{display:none}#views{top:auto;bottom:10px;right:62px;flex-direction:row;flex-wrap:wrap;max-width:calc(100vw - 230px);justify-content:flex-end}#info{bottom:64px}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="top"><div id="floors"></div><div id="chips"></div></div>
+<div id="views" class="box"></div>
+<div id="zoom" class="box"><button id="zin" title="Avvicina">+</button><button id="zout" title="Allontana">−</button></div>
+<div id="info" class="box">Trascina per girare · tasto destro o due dita per spostare · rotella per lo zoom · <b>doppio clic</b> su un punto per leggerne le coordinate</div>
+<div id="title">Villa Delvis · modello 3D</div>
+<div id="err"></div>
+<div id="labels"></div>
+<script>/*THREE*/</script>
+<script>
+(function(){
+const GLB=/*GLB*/"",META=/*META*/null;
+const fail=m=>{const e=document.getElementById('err');e.style.display='flex';e.textContent=m};
+try{
+if(typeof THREE==='undefined'||!GLB)throw new Error('Libreria 3D o modello mancanti: rigenera il progetto con sorgenti/genera_villa.py');
+const CFG=META.cfg,ST=META.stanze,NOMI=META.nomi;
+const nome=n=>NOMI[n]||n.replace(/_/g,' ');
+
+// ---------- lettura del .glb incorporato
+const bin=atob(GLB),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+const buf=u8.buffer,dv=new DataView(buf),jl=dv.getUint32(12,true);
+const gj=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,20,jl))),bo=20+jl+8;
+const vw=i=>{const v=gj.bufferViews[i];return[bo+(v.byteOffset||0),v.byteLength]};
+const acc=i=>{const a=gj.accessors[i],[o]=vw(a.bufferView),n=a.count*({VEC3:3,VEC2:2,SCALAR:1}[a.type]);
+  return a.componentType===5125?new Uint32Array(buf.slice(o,o+n*4)):new Float32Array(buf.slice(o,o+n*4))};
+
+// ---------- scena
+const cv=document.getElementById('c');
+const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+R.setPixelRatio(Math.min(2,devicePixelRatio||1));R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;R.localClippingEnabled=true;
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(38,1,0.3,400);
+scene.add(new THREE.HemisphereLight(0xe4efff,0x7b8466,1.05));
+const sun=new THREE.DirectionalLight(0xfff3dc,2.1);sun.position.set(-18,34,44);sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);const sc=sun.shadow.camera;sc.left=-34;sc.right=34;sc.top=34;sc.bottom=-34;sc.near=1;sc.far=120;sun.shadow.bias=-0.0004;sun.shadow.normalBias=0.03;
+sun.target.position.set(CFG.centro[0],0,CFG.centro[2]);scene.add(sun,sun.target);
+
+const tex=gj.images.map(im=>{const[o,l]=vw(im.bufferView);const t=new THREE.TextureLoader().load(URL.createObjectURL(new Blob([new Uint8Array(buf,o,l)],{type:'image/png'})));
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t});
+const mats=gj.materials.map(m=>{const p=m.pbrMetallicRoughness,c=p.baseColorFactor;
+  const mm=new THREE.MeshStandardMaterial({roughness:p.roughnessFactor,metalness:p.metallicFactor,side:THREE.DoubleSide,
+    transparent:m.alphaMode==='BLEND',opacity:c[3],depthWrite:m.alphaMode!=='BLEND'});
+  mm.color.setRGB(c[0],c[1],c[2],THREE.LinearSRGBColorSpace);
+  if(p.baseColorTexture)mm.map=tex[gj.textures[p.baseColorTexture.index].source];return mm});
+
+const G={};                                   // nome gruppo -> THREE.Group
+const root=new THREE.Group();scene.add(root);
+const meshes=[];
+const planes={terra:new THREE.Plane(new THREE.Vector3(0,-1,0),1.2),primo:new THREE.Plane(new THREE.Vector3(0,-1,0),1.2)};
+const FLOOR={piano_terra:'terra',stanze_terra:'terra',solai_terra:'terra',primo_piano:'primo',stanze_primo:'primo',terrazza:'primo',tetto:'tetto',esterno:'ext'};
+const WALLMATS=new Set(['muro','vetro','telaio','porta','basculante','bordo']);
+const sceneNode=gj.scenes[0].nodes[0];
+for(const gi of gj.nodes[sceneNode].children){
+  const gn=gj.nodes[gi],grp=new THREE.Group();grp.name=gn.name;G[gn.name]=grp;root.add(grp);
+  for(const ci of gn.children||[]){
+    const nd=gj.nodes[ci],pr=gj.meshes[nd.mesh].primitives[0],geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(acc(pr.attributes.POSITION),3));
+    geo.setAttribute('normal',new THREE.BufferAttribute(acc(pr.attributes.NORMAL),3));
+    if(pr.attributes.TEXCOORD_0!=null)geo.setAttribute('uv',new THREE.BufferAttribute(acc(pr.attributes.TEXCOORD_0),2));
+    geo.setIndex(new THREE.BufferAttribute(acc(pr.indices),1));
+    let m=mats[pr.material];const fl=FLOOR[gn.name];
+    if((fl==='terra'||fl==='primo')&&gn.name!=='solai_terra'&&gn.name!=='terrazza'&&gn.name.indexOf('stanze')<0&&WALLMATS.has(gj.materials[pr.material].name)){m=m.clone();m.userData.fl=fl;m.clipShadows=true}
+    const me=new THREE.Mesh(geo,m);me.castShadow=m.opacity>=1;me.receiveShadow=true;me.name=nd.name;grp.add(me);meshes.push(me)}}
+const clipMats=meshes.map(x=>x.material).filter(m=>m.userData.fl);
+const ground=G.esterno;if(ground){ground.children.forEach(c=>{c.castShadow=false})}
+
+// ---------- stato / interfaccia
+const S={piano:'tutto',tetto:true,esploso:true,etichette:true,sezione:false};
+try{const p=JSON.parse(localStorage.getItem('villa_delvis_3d')||'{}');for(const k of ['tetto','esploso','etichette','sezione'])if(k in p)S[k]=p[k]}catch(e){}
+const save=()=>{try{const o=Object.assign({},S);delete o.piano;localStorage.setItem('villa_delvis_3d',JSON.stringify(o))}catch(e){}};
+const mk=(p,t,f,title)=>{const b=document.createElement('button');b.textContent=t;if(title)b.title=title;b.onclick=()=>f(b);p.append(b);return b};
+const FB={},CB={};
+[['tutto','Tutta la villa'],['terra','Piano terra'],['primo','Primo piano']].forEach(([k,t])=>FB[k]=mk(document.getElementById('floors'),t,()=>{S.piano=k;ui()}));
+[['tetto','Tetto'],['esploso','Esploso'],['sezione','Sezione muri'],['etichette','Locali']].forEach(([k,t])=>CB[k]=mk(document.getElementById('chips'),t,()=>{S[k]=!S[k];ui()}));
+mk(document.getElementById('chips'),'‹ Vista a fili',()=>{location.href='vista_a_fili.html'},'Vista a fili con piani');
+const GAP=CFG.gap,Y1=CFG.y1;
+const tgt={terra:0,primo:0,tetto:0};
+const off={terra:0,primo:0,tetto:0};
+function ui(){
+  for(const k in FB)FB[k].classList.toggle('on',S.piano===k);
+  for(const k in CB)CB[k].classList.toggle('on',!!S[k]);
+  CB.esploso.style.display=S.piano==='tutto'?'':'none';
+  const ex=S.piano==='tutto'&&S.esploso;
+  tgt.terra=0;tgt.primo=ex?GAP:0;tgt.tetto=ex?2*GAP:0;
+  for(const n in G){const f=FLOOR[n];
+    G[n].visible=f==='ext'||(f==='terra'&&S.piano!=='primo')||(f==='primo'&&S.piano!=='terra')||(f==='tetto'&&S.tetto&&S.piano!=='terra')}
+  clipMats.forEach(m=>{m.clippingPlanes=S.sezione?[planes[m.userData.fl]]:null;m.needsUpdate=true});
+  save();
+}
+const views=document.getElementById('views');
+const PRE={"Isometrica":[-0.62,0.62],"Dall'alto":[0,1.5],"Sud (fronte)":[0,0.12],"Nord":[Math.PI,0.12],"Ovest":[-Math.PI/2,0.12],"Est":[Math.PI/2,0.12]};
+for(const n in PRE)mk(views,n,()=>anim(PRE[n]));
+const bauto=mk(views,'Rotazione',()=>{st.auto=!st.auto;bauto.classList.toggle('on',st.auto)});
+
+// ---------- orbita
+const st={yaw:-0.62,pitch:0.62,dist:48,auto:false};
+const T=new THREE.Vector3(CFG.centro[0],CFG.centro[1],CFG.centro[2]);
+let tween=null;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function anim(t){let dy=t[0]-st.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));tween={y0:st.yaw,dy,p0:st.pitch,dp:t[1]-st.pitch,t:0}}
+const ptrs=new Map();let moved=0,pinch0=0,lastTap={t:0,x:0,y:0};
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,b:e.button,sh:e.shiftKey});moved=0;tween=null;
+  if(ptrs.size==2){const a=[...ptrs.values()];pinch0=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)}});
+cv.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;
+  if(ptrs.size==2){const o=[...ptrs.entries()].find(([k])=>k!==e.pointerId)[1];p.x=e.clientX;p.y=e.clientY;
+    const d=Math.hypot(p.x-o.x,p.y-o.y);if(pinch0)st.dist=clamp(st.dist*pinch0/d,5,120);pinch0=d;pan(dx/2,dy/2);moved+=9;return}
+  p.x=e.clientX;p.y=e.clientY;moved+=Math.abs(dx)+Math.abs(dy);
+  if(p.b===2||p.sh)pan(dx,dy);else{st.yaw-=dx*0.008;st.pitch=clamp(st.pitch+dy*0.006,0.02,1.55)}});
+function pan(dx,dy){const k=st.dist*0.0016,r=new THREE.Vector3(Math.cos(st.yaw),0,-Math.sin(st.yaw));
+  T.addScaledVector(r,-dx*k);T.y=clamp(T.y+dy*k,-1,12);const f=new THREE.Vector3(-Math.sin(st.yaw),0,-Math.cos(st.yaw));T.addScaledVector(f,dy*k*0.0)}
+cv.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);pinch0=0;
+  if(moved<6&&ptrs.size==0){const now=performance.now();if(now-lastTap.t<380&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<28){lastTap.t=0;pick(e.clientX,e.clientY)}else lastTap={t:now,x:e.clientX,y:e.clientY}}});
+cv.addEventListener('pointercancel',e=>ptrs.delete(e.pointerId));
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('wheel',e=>{e.preventDefault();st.dist=clamp(st.dist*Math.exp(e.deltaY*0.001),5,120)},{passive:false});
+const held=new Set();
+for(const [id,k] of [['zin','zin'],['zout','zout']]){const b=document.getElementById(id);b.addEventListener('pointerdown',e=>{e.preventDefault();held.add(k)});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>held.delete(k)))}
+const KM={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down','+':'zin','=':'zin','-':'zout'};
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const m=KM[e.key];if(m){held.add(m);tween=null;e.preventDefault()}});
+addEventListener('keyup',e=>{const m=KM[e.key];if(m)held.delete(m)});
+
+// ---------- doppio clic: coordinate del punto
+const ray=new THREE.Raycaster(),info=document.getElementById('info');
+function pick(mx,my){
+  ray.setFromCamera(new THREE.Vector2(mx/innerWidth*2-1,-(my/innerHeight)*2+1),cam);
+  const vis=meshes.filter(m=>{let o=m;while(o){if(o.visible===false)return false;o=o.parent}return m.material.opacity>=1});
+  const h=ray.intersectObjects(vis,false)[0];if(!h){info.innerHTML='Trascina per girare · rotella per lo zoom · <b>doppio clic</b> su un punto per le coordinate';return}
+  const p=h.point.clone(),g=h.object.parent,f=FLOOR[g.name];const dy=f==='terra'?off.terra:f==='primo'?off.primo:f==='tetto'?off.tetto:0;
+  const x=p.x,y=p.y-dy,z=p.z;let best='',bd=1e9;const pian=y>=Y1-0.2&&f!=='terra'?'primo':'terra';
+  for(const n in ST){if(ST[n].piano!==pian)continue;const d=Math.hypot(ST[n].x-x,ST[n].z-z);if(inPoly(ST[n].poly,x,z)){best=n;bd=-1;break}if(d<bd){bd=d;best=n}}
+  const txt='{"x":'+x.toFixed(2)+',"y":'+y.toFixed(2)+',"z":'+z.toFixed(2)+'}';
+  info.innerHTML='<b>'+h.object.name.replace(/_/g,' ')+'</b>'+(best?' · '+(bd<0?'dentro ':'vicino a ')+nome(best):'')+'<br>X '+x.toFixed(2)+' · Z '+z.toFixed(2)+' · Y '+y.toFixed(2)+' m<br><input readonly value=\''+txt+'\'> <button id="cp">Copia</button>';
+  const i=info.querySelector('input');document.getElementById('cp').onclick=ev=>{i.select();try{document.execCommand('copy');ev.target.textContent='Copiato ✓'}catch(e){}}}
+function inPoly(p,x,z){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const a=p[i],b=p[j];if((a[1]>z)!=(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])c=!c}return c}
+
+// ---------- etichette dei locali
+const LB=document.getElementById('labels'),lbl={};
+for(const n in ST){const d=document.createElement('div');d.className='lbl';d.innerHTML=nome(n)+'<small>'+ST[n].area.toFixed(1).replace('.',',')+' m²</small>';LB.append(d);lbl[n]=d}
+const v3=new THREE.Vector3();
+function labels(){
+  for(const n in ST){const r=ST[n],d=lbl[n],f=r.piano==='terra'?'terra':'primo';
+    const vis=S.etichette&&(f==='terra'?S.piano!=='primo':S.piano!=='terra');
+    if(!vis){d.style.display='none';continue}
+    v3.set(r.x,r.y+0.15+off[f],r.z).project(cam);
+    if(v3.z>1||Math.abs(v3.x)>1.1||Math.abs(v3.y)>1.1){d.style.display='none';continue}
+    d.style.display='';d.style.left=((v3.x+1)/2*innerWidth)+'px';d.style.top=((1-v3.y)/2*innerHeight)+'px'}}
+
+// ---------- ciclo
+function resize(){const w=innerWidth,h=innerHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();st.fit=(w<h*0.9?1.25:1)}
+addEventListener('resize',resize);resize();
+st.dist=48*(innerWidth<innerHeight*0.9?1.25:1);
+let last=performance.now();
+function frame(t){requestAnimationFrame(frame);if(document.hidden){last=t;return}try{frame2(t)}catch(e){if(!frame.err){frame.err=1;console.error('frame',e&&e.stack||e)}}}
+function frame2(t){
+  const dt=Math.min(.05,(t-last)/1000);last=t;
+  if(tween){tween.t=Math.min(1,tween.t+dt/0.8);const e=1-Math.pow(1-tween.t,3);st.yaw=tween.y0+tween.dy*e;st.pitch=tween.p0+tween.dp*e;if(tween.t>=1)tween=null}
+  if(held.has('left'))st.yaw+=1.3*dt;if(held.has('right'))st.yaw-=1.3*dt;
+  if(held.has('up'))st.pitch=clamp(st.pitch-0.9*dt,0.02,1.55);if(held.has('down'))st.pitch=clamp(st.pitch+0.9*dt,0.02,1.55);
+  if(held.has('zin'))st.dist=clamp(st.dist*(1-0.9*dt),5,120);if(held.has('zout'))st.dist=clamp(st.dist*(1+0.9*dt),5,120);
+  if(st.auto&&!ptrs.size)st.yaw-=0.25*dt;
+  for(const k of ['terra','primo','tetto']){off[k]+=(tgt[k]-off[k])*Math.min(1,dt*6)}
+  G.piano_terra&&(G.piano_terra.position.y=G.solai_terra.position.y=G.stanze_terra.position.y=off.terra);
+  for(const n of ['primo_piano','terrazza','stanze_primo'])G[n]&&(G[n].position.y=off.primo);
+  G.tetto&&(G.tetto.position.y=off.tetto);
+  planes.terra.constant=1.2+off.terra;planes.primo.constant=Y1+1.2+off.primo;
+  const ex=S.piano==='tutto'&&S.esploso,ty=T.y+(ex?GAP*0.9:0);
+  const cy=Math.cos(st.pitch),sy=Math.sin(st.pitch);
+  cam.position.set(T.x+st.dist*Math.sin(st.yaw)*cy,ty+st.dist*sy,T.z+st.dist*Math.cos(st.yaw)*cy);
+  cam.lookAt(T.x,ty,T.z);
+  R.render(scene,cam);labels()}
+window.__v={cam,scene,G,R,st,T,off,tgt,S,frame2:t=>frame2(t)};ui();requestAnimationFrame(frame);
+document.getElementById('title').textContent='Villa Delvis · modello 3D';
+}catch(e){console.error(e);fail('Errore: '+e.message)}
+})();
+</script>
+</body>
+</html>

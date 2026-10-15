@@ -1,0 +1,222 @@
+{
+ "unita": "metri",
+ "assi": "X verso est (destra del disegno), Y verso l'alto, Z verso sud (basso del disegno)",
+ "origine": "angolo nord-ovest della terrazza",
+ "scala_piantine_m_per_px": {
+  "primo_piano": 0.0201015,
+  "piano_terra": 0.029631100000000004
+ },
+ "ingombro_m": {
+  "x": [
+   -40,
+   55
+  ],
+  "y": [
+   -0.3,
+   7.3
+  ],
+  "z": [
+   -30,
+   60
+  ]
+ },
+ "quote_m": {
+  "pavimento_terra": 0,
+  "pavimento_primo": 2.9,
+  "gronda": 5.6,
+  "colmo": 7.16
+ },
+ "stanze": {
+  "autorimesse": {
+   "piano": "terra",
+   "x": 7.53,
+   "z": 4.88,
+   "y_pavimento": 0,
+   "area_m2": 141.6
+  },
+  "cantina": {
+   "piano": "terra",
+   "x": 12.26,
+   "z": 6.81,
+   "y_pavimento": 0,
+   "area_m2": 8.2
+  },
+  "lavanderia": {
+   "piano": "terra",
+   "x": 11.82,
+   "z": 9.8,
+   "y_pavimento": 0,
+   "area_m2": 10.7
+  },
+  "passaggio_coperto": {
+   "piano": "terra",
+   "x": 14.45,
+   "z": 7.79,
+   "y_pavimento": 0,
+   "area_m2": 4.4
+  },
+  "sgombero_est": {
+   "piano": "terra",
+   "x": 17.03,
+   "z": 7.67,
+   "y_pavimento": 0,
+   "area_m2": 17.5
+  },
+  "sgombero": {
+   "piano": "terra",
+   "x": 6.54,
+   "z": 14.19,
+   "y_pavimento": 0,
+   "area_m2": 52.3
+  },
+  "camera_ovest": {
+   "piano": "primo",
+   "x": 2.01,
+   "z": 7.11,
+   "y_pavimento": 2.9,
+   "area_m2": 11.0
+  },
+  "bagno_nord": {
+   "piano": "primo",
+   "x": 5.38,
+   "z": 7.43,
+   "y_pavimento": 2.9,
+   "area_m2": 8.5
+  },
+  "camera_centro": {
+   "piano": "primo",
+   "x": 8.31,
+   "z": 7.43,
+   "y_pavimento": 2.9,
+   "area_m2": 10.3
+  },
+  "camera_est": {
+   "piano": "primo",
+   "x": 11.9,
+   "z": 7.43,
+   "y_pavimento": 2.9,
+   "area_m2": 13.0
+  },
+  "cucina": {
+   "piano": "primo",
+   "x": 1.58,
+   "z": 10.69,
+   "y_pavimento": 2.9,
+   "area_m2": 10.9
+  },
+  "disimpegno": {
+   "piano": "primo",
+   "x": 7.26,
+   "z": 10.19,
+   "y_pavimento": 2.9,
+   "area_m2": 10.9
+  },
+  "bagno_est": {
+   "piano": "primo",
+   "x": 12.74,
+   "z": 10.69,
+   "y_pavimento": 2.9,
+   "area_m2": 4.8
+  },
+  "soggiorno": {
+   "piano": "primo",
+   "x": 6.67,
+   "z": 13.97,
+   "y_pavimento": 2.9,
+   "area_m2": 49.7
+  },
+  "balcone": {
+   "piano": "primo",
+   "x": 8.11,
+   "z": 17.41,
+   "y_pavimento": 2.9,
+   "area_m2": 31.4
+  },
+  "terrazza": {
+   "piano": "primo",
+   "x": 11.55,
+   "z": 5.35,
+   "y_pavimento": 2.9,
+   "area_m2": 84.9
+  }
+ },
+ "finestre": [
+  {
+   "gruppo": "piano_terra",
+   "x": 17.06,
+   "z": 10.25,
+   "y": 1.5,
+   "larghezza_m": 1.48
+  },
+  {
+   "gruppo": "piano_terra",
+   "x": 11.43,
+   "z": 13.69,
+   "y": 1.55,
+   "larghezza_m": 1.54
+  },
+  {
+   "gruppo": "piano_terra",
+   "x": 1.65,
+   "z": 14.03,
+   "y": 1.55,
+   "larghezza_m": 1.63
+  },
+  {
+   "gruppo": "primo_piano",
+   "x": -0.18,
+   "z": 10.52,
+   "y": 4.4,
+   "larghezza_m": 0.94
+  },
+  {
+   "gruppo": "primo_piano",
+   "x": 2.21,
+   "z": 5.41,
+   "y": 4.4,
+   "larghezza_m": 1.01
+  },
+  {
+   "gruppo": "primo_piano",
+   "x": 5.38,
+   "z": 5.41,
+   "y": 4.4,
+   "larghezza_m": 0.7
+  },
+  {
+   "gruppo": "primo_piano",
+   "x": 8.17,
+   "z": 5.41,
+   "y": 4.4,
+   "larghezza_m": 0.94
+  },
+  {
+   "gruppo": "primo_piano",
+   "x": 11.81,
+   "z": 5.41,
+   "y": 4.4,
+   "larghezza_m": 1.11
+  },
+  {
+   "gruppo": "primo_piano",
+   "x": 13.99,
+   "z": 10.64,
+   "y": 4.4,
+   "larghezza_m": 0.7
+  },
+  {
+   "gruppo": "primo_piano",
+   "x": 11.34,
+   "z": 13.69,
+   "y": 4.4,
+   "larghezza_m": 1.37
+  },
+  {
+   "gruppo": "primo_piano",
+   "x": 5.95,
+   "z": 16.82,
+   "y": 4.4,
+   "larghezza_m": 1.65
+  }
+ ]
+}
